@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>METRO R&S 스마트 현장관리 시스템</title>
+    <title>(주)METRO R&S 현장관리 시스템 V19.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1e272e; --accent: #3498db; --success: #27ae60; --pdf: #e74c3c; --highlight: #e8f6f3; --share: #9b59b6; }
@@ -21,39 +21,23 @@
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         .filled { background-color: var(--highlight); border-color: var(--success); }
         
-        /* 중복 데이터 선택 레이어 수정 */
-#search-results { 
-    display: none; 
-    background: #fff; 
-    border: 2px solid var(--accent); 
-    border-radius: 6px; 
-    margin-top: -5px; 
-    margin-bottom: 15px; 
-    max-height: 250px; 
-    overflow-y: auto; 
-    z-index: 100;
-    /* 가로폭 조절 핵심: 2칸(grid-column span 2)을 다 차지하도록 설정 */
-    grid-column: span 2; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.result-item { 
-    padding: 12px; 
-    border-bottom: 1px solid #eee; 
-    cursor: pointer; 
-    font-size: 13.5px;
-    line-height: 1.4;
-}
-
-.result-item:last-child { border-bottom: none; }
-.result-item:hover { background: #f1f9ff; }
-.result-item b { color: var(--accent); display: block; margin-bottom: 2px; }
+        /* 검색 결과 레이어 (V19.4 적용) */
+        #search-results { 
+            display: none; background: #fff; border: 2px solid var(--accent); border-radius: 6px; 
+            margin-top: -5px; margin-bottom: 15px; max-height: 250px; overflow-y: auto; 
+            z-index: 100; grid-column: span 2; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 13.5px; line-height: 1.4; text-align: left; }
+        .result-item:hover { background: #f1f9ff; }
+        .result-item b { color: var(--accent); display: block; margin-bottom: 4px; }
 
         .photo-area { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
         .photo-box { background: #f8f9fa; height: 100px; display: flex; align-items: center; justify-content: center; border: 2px dashed #cfd8dc; border-radius: 8px; cursor: pointer; position: relative; overflow: hidden; }
-        .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; }
+        .photo-box span { font-size: 12px; color: #546e7a; font-weight: bold; text-align: center; }
+        .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; z-index: 10; }
+        
         .btn-group { display: flex; gap: 8px; margin-top: 20px; }
-        button { padding: 14px; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 15px; flex: 1; }
+        button { padding: 14px; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 15px; flex: 1; transition: 0.3s; }
         .btn-save { background: var(--success); }
         .btn-send { background: var(--share); flex: 2; }
         #pdf-template { display: none; width: 794px; padding: 20px 40px; background: white; }
@@ -63,13 +47,13 @@
 
 <header>
     <img src="logo.png" alt="METRO" style="height: 24px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-    <span>(주)METRO 현장관리 시스템 V19.4</span>
+    <span>현장관리 시스템 V19.5</span>
     <span class="setting-icon" onclick="toggleConfig()">⚙️</span>
 </header>
 
 <div class="container">
     <div id="config-section" class="section" style="display:none;">
-        <button onclick="fetchCloudDB()">🔄 구글 시트 수동 동기화</button>
+        <button style="background:#2980b9; width:100%;" onclick="fetchCloudDB()">🔄 구글 시트 수동 동기화</button>
     </div>
 
     <div class="section">
@@ -79,8 +63,8 @@
             <select id="db-sheet" onchange="clearFormButKeepSheet()">
                 <option value="">⏳ DB 로딩 중...</option>
             </select>
-            <input type="text" id="dong" placeholder="동 (예: 101)" oninput="searchByUnit()">
-            <input type="text" id="ho" placeholder="호 (예: 502)" oninput="searchByUnit()">
+            <input type="text" id="dong" placeholder="동" oninput="searchByUnit()">
+            <input type="text" id="ho" placeholder="호" oninput="searchByUnit()">
             
             <div id="search-results"></div>
 
@@ -90,7 +74,8 @@
             <input type="text" id="type" placeholder="하자 유형">
             <input type="text" id="contractor" placeholder="시공업체">
             <textarea id="desc" placeholder="하자 내용 설명"></textarea>
-            <input type="hidden" id="no"> </div>
+            <input type="hidden" id="no">
+        </div>
         
         <div class="photo-area">
             <div class="photo-box" onclick="document.getElementById('f1').click()"><span id="t1">작업 전📷</span><img id="p1" class="preview-img"><input type="file" id="f1" hidden accept="image/*" onchange="view(this,'p1','t1')"></div>
@@ -111,6 +96,11 @@
 
     window.onload = () => { fetchCloudDB(); document.getElementById('today-date').value = new Date().toISOString().substring(0, 10); };
 
+    function toggleConfig() {
+        const config = document.getElementById('config-section');
+        config.style.display = (config.style.display === 'none') ? 'block' : 'none';
+    }
+
     async function fetchCloudDB() {
         const select = document.getElementById('db-sheet');
         try {
@@ -124,46 +114,30 @@
         } catch (e) { select.innerHTML = '<option value="">⛔ 서버 연결 실패</option>'; }
     }
 
-// [V19.4] 왼쪽 정렬 및 가로 폭 맞춤 말줄임 처리
-function searchByUnit() {
-    const sheet = document.getElementById('db-sheet').value;
-    const dong = document.getElementById('dong').value.trim();
-    const ho = document.getElementById('ho').value.trim();
-    const resultDiv = document.getElementById('search-results');
-    
-    if (!sheet || !dong || !ho) { resultDiv.style.display = 'none'; return; }
+    function searchByUnit() {
+        const sheet = document.getElementById('db-sheet').value;
+        const dong = document.getElementById('dong').value.trim();
+        const ho = document.getElementById('ho').value.trim();
+        const resultDiv = document.getElementById('search-results');
+        
+        if (!sheet || !dong || !ho) { resultDiv.style.display = 'none'; return; }
 
-    const list = cloudDB[sheet] || [];
-    const matches = list.filter(item => String(item.dong) === dong && String(item.ho) === ho);
+        const list = cloudDB[sheet] || [];
+        const matches = list.filter(item => String(item.dong) === dong && String(item.ho) === ho);
 
-    if (matches.length > 0) {
-        resultDiv.innerHTML = `<div style="padding:10px; background:#f8f9fa; font-size:12px; color:#666; border-bottom:1px solid #ddd; text-align:left;">🔍 해당 호실 내역 ${matches.length}건</div>`;
-        matches.forEach(item => {
-            // 상세 내용 (내용이 없으면 '내용 없음' 표시)
-            const descText = item.desc || "상세 내용 없음";
-            
-            resultDiv.innerHTML += `
-                <div class="result-item" onclick='fillData(${JSON.stringify(item).replace(/'/g, "&apos;")})' 
-                     style="border-bottom: 1px solid #eee; padding: 12px; text-align: left;">
-                    <b style="color: #3498db; font-size: 14px; display: block; margin-bottom: 4px;">📍 ${item.loc || '위치 미지정'}</b>
-                    <div style="
-                        color: #333; 
-                        font-size: 13.5px; 
-                        white-space: nowrap; 
-                        overflow: hidden; 
-                        text-overflow: ellipsis; 
-                        width: 100%;
-                        display: block;
-                    ">
-                        📝 ${descText}
-                    </div>
-                </div>`;
-        });
-        resultDiv.style.display = 'block';
-    } else {
-        resultDiv.style.display = 'none';
+        if (matches.length > 0) {
+            resultDiv.innerHTML = `<div style="padding:10px; background:#f8f9fa; font-size:12px; color:#666; border-bottom:1px solid #ddd; text-align:left;">🔍 해당 호실 내역 ${matches.length}건</div>`;
+            matches.forEach(item => {
+                const descText = item.desc || "상세 내용 없음";
+                resultDiv.innerHTML += `
+                    <div class="result-item" onclick='fillData(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+                        <b>📍 ${item.loc || '위치 미지정'}</b>
+                        <div style="color:#333; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📝 ${descText}</div>
+                    </div>`;
+            });
+            resultDiv.style.display = 'block';
+        } else { resultDiv.style.display = 'none'; }
     }
-}
 
     function fillData(item) {
         const fields = ['no', 'site', 'loc', 'work', 'type', 'contractor', 'desc'];
@@ -175,8 +149,89 @@ function searchByUnit() {
         document.getElementById('search-results').style.display = 'none';
     }
 
-    // 나머지 view, saveLocal, sendToGoogleServer 함수 등은 기존 V18.9와 동일하게 유지...
-    // (지면상 생략하지만 원본 코드의 로직이 그대로 들어가도록 구성하시면 됩니다.)
+    function view(input, pId, tId) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgObj = new Image();
+                imgObj.onload = function() {
+                    let finalSrc = "";
+                    if (pId === 'p1' || pId === 'p2') {
+                        finalSrc = addWatermark(imgObj, getCurrentData(), pId);
+                    } else {
+                        const canvas = document.createElement('canvas');
+                        let w = imgObj.width; let h = imgObj.height; const MAX_SIZE = 1000;
+                        if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } } else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(imgObj, 0, 0, w, h);
+                        finalSrc = canvas.toDataURL('image/jpeg', 0.8);
+                    }
+                    const img = document.getElementById(pId);
+                    img.src = finalSrc; img.style.display = 'block';
+                    document.getElementById(tId).style.display = 'none';
+                };
+                imgObj.src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function addWatermark(imgObj, data, pId) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        let w = imgObj.width; let h = imgObj.height; const MAX_SIZE = 1200;
+        if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } } else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
+        canvas.width = w; canvas.height = h;
+        ctx.drawImage(imgObj, 0, 0, w, h);
+
+        const boxWidth = w * 0.5; const boxHeight = h * 0.25;
+        const x = 0; const y = h - boxHeight;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.85)"; ctx.fillRect(x, y, boxWidth, boxHeight);
+        ctx.strokeStyle = "#ccc"; ctx.lineWidth = 2; ctx.strokeRect(x, y, boxWidth, boxHeight);
+
+        const fontSize = Math.max(14, Math.floor(h * 0.025));
+        ctx.font = `bold ${fontSize}px sans-serif`; ctx.fillStyle = "black"; ctx.textAlign = "left";
+        const lineHeight = boxHeight / 5; const colDivider = boxWidth * 0.25;
+        const labels = ["현 장", "위 치", "내 용", "공 정", "일 자"];
+        const values = [data.site, `${data.dong}동 ${data.ho}호 (${data.loc})`, data.desc.substring(0, 20), data.work, data.date];
+
+        for(let i=0; i<5; i++) {
+            let curY = y + (lineHeight * i) + (lineHeight / 2) + 5;
+            ctx.fillText(labels[i], x + 10, curY);
+            ctx.fillText(values[i], x + colDivider + 10, curY);
+        }
+        return canvas.toDataURL('image/jpeg', 0.9);
+    }
+
+    function getCurrentData() {
+        return {
+            date: document.getElementById('today-date').value,
+            site: document.getElementById('site').value,
+            dong: document.getElementById('dong').value,
+            ho: document.getElementById('ho').value,
+            loc: document.getElementById('loc').value,
+            work: document.getElementById('work').value,
+            desc: document.getElementById('desc').value
+        };
+    }
+
+    async function sendToGoogleServer() {
+        const btn = document.querySelector('.btn-send');
+        btn.innerText = "⏳ 전송 중..."; btn.disabled = true;
+        try {
+            const data = getCurrentData();
+            const payload = { record: data, certBase64: document.getElementById('p3').src.split(',')[1] || "" };
+            const res = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await res.json();
+            if(result.result === 'success') { alert("✅ 전송 성공!"); location.reload(); }
+        } catch(e) { alert("❌ 전송 실패"); btn.disabled = false; btn.innerText = "최종 전송"; }
+    }
+
+    function clearFormButKeepSheet() {
+        ['dong','ho','site','loc','work','type','contractor','desc','no'].forEach(id => {
+            const el = document.getElementById(id); if(el) { el.value = ''; el.classList.remove('filled'); }
+        });
+    }
 </script>
 </body>
 </html>
