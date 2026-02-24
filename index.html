@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(주)METRO R&S 스마트 현장관리 시스템</title>
+    <title>(주)METRO R&S 통합 시스템 V20.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1e272e; --accent: #3498db; --success: #27ae60; --pdf: #e74c3c; --highlight: #e8f6f3; --share: #9b59b6; }
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: #f0f2f5; font-size: 14px; color: #333; padding-bottom: 50px; }
-        header { background: var(--primary); color: white; padding: 15px; font-weight: bold; text-align: center; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        header { background: var(--primary); color: white; padding: 15px; font-weight: bold; text-align: center; position: sticky; top: 0; z-index: 100; }
         .container { padding: 10px; max-width: 800px; margin: auto; }
         .section { background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .section-title { font-weight: bold; color: var(--accent); margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 8px; font-size: 15px; }
+        .section-title { font-weight: bold; color: var(--accent); margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 8px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .full { grid-column: span 2; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
@@ -37,7 +37,7 @@
 
 <header>
     <img src="logo.png" alt="METRO" style="height: 24px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-    <span>METRO 현장관리 시스템 V20.4</span>
+    <span>(주)METRO R&S 통합 시스템 V20.3</span>
 </header>
 
 <div class="container">
@@ -96,7 +96,8 @@
 </div>
 
 <script>
-    const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbwrYGXkJLvXmQpWjjgfQqXVs640jjUopRMDi0xsOX-1c-D--rPTU1CBNMoFbXZMzk9Vxw/exec"; 
+    // 🌟 [중요] 여기에 방금 발급받은 '새 배포 URL'을 넣으세요!
+    const MY_GAS_URL = "https://script.google.com/macros/s/AKfycby5kOacxsp3T-WuWcwlaxJq6k5YA-90aFvQw2uxlbcpA3KUQoeszuXAZxIecFHqduW_cQ/exec"; 
     let cloudDB = {}; let currentSid = ""; let savedList = [];
 
     window.onload = () => { getSites(); document.getElementById('today-date').value = new Date().toISOString().substring(0, 10); };
@@ -109,8 +110,8 @@
             if(j.result==='success') {
                 s.innerHTML = '<option value="">🏢 현장을 선택하세요</option>';
                 j.sites.forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`);
-            } else { throw new Error(j.message); }
-        } catch(e) { s.innerHTML = '<option value="">❌ 로드 실패 (URL/권한 확인)</option>'; console.log(e); }
+            } else { throw new Error(); }
+        } catch(e) { s.innerHTML = '<option value="">❌ 목록 로드 실패 (URL/권한 확인)</option>'; }
     }
 
     async function loadDB() {
