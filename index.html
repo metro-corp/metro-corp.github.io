@@ -3,66 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>(주)METRO R&S 현장관리 시스템</title>
+  <title>(주)METRO R&S 현장관리 시스템 V18.9</title>
   <style>
-    body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-    .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    h2 { text-align: center; color: #2c3e50; font-size: 1.2rem; }
-    label { font-weight: bold; margin-top: 10px; display: block; font-size: 0.9rem; }
-    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-    button { width: 100%; padding: 15px; margin-top: 20px; background-color: #27ae60; color: white; border: none; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; }
-    button:disabled { background-color: #95a5a6; }
-    #statusMessage { text-align: center; margin-top: 15px; font-weight: bold; color: #e74c3c; }
+    :root {
+      --primary-blue: #3498db;
+      --primary-yellow: #f39c12;
+      --primary-green: #2ecc71;
+      --primary-purple: #9b59b6;
+      --bg-color: #f4f7f6;
+    }
+    body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; color: #333; }
+    
+    /* 상단 헤더 */
+    .header { background-color: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+    .header .title { display: flex; align-items: center; gap: 8px; }
+    
+    .container { max-width: 600px; margin: 15px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    
+    /* 섹션 제목 */
+    .section-title { color: var(--primary-blue); font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; }
+    
+    /* 입력 폼 공통 */
+    input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-blue); }
+    
+    /* 특별한 입력 폼 테두리 색상 */
+    .input-yellow { border: 2px solid #f1c40f; color: #d35400; font-weight: bold; }
+    .input-blue { border: 2px solid var(--primary-blue); }
+    
+    /* 그리드 레이아웃 (반반 나누기) */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    
+    /* 사진 첨부 박스 */
+    .photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .photo-box { border: 2px dashed #bdc3c7; border-radius: 8px; padding: 20px 0; text-align: center; cursor: pointer; color: #7f8c8d; font-size: 0.85rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #fafafa; transition: 0.2s; }
+    .photo-box:hover { background-color: #f1f2f6; }
+    .photo-box.active { border-color: var(--primary-green); color: var(--primary-green); border-style: solid; background-color: #e8f8f5; }
+    .photo-box input[type="file"] { display: none; }
+    
+    /* 버튼 */
+    .btn-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 10px; }
+    .btn { padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; color: white; cursor: pointer; text-align: center; transition: 0.2s; }
+    .btn-green { background-color: var(--primary-green); }
+    .btn-purple { background-color: var(--primary-purple); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+    #statusMessage { text-align: center; margin-top: 15px; font-weight: bold; font-size: 0.95rem; }
   </style>
 </head>
 <body>
 
+<div class="header">
+  <div class="title"><span>🌀</span> (주)METRO R&S 현장관리 시스템 V18.9</div>
+  <span>⚙️</span>
+</div>
+
 <div class="container">
-  <h2>⚙️ (주)METRO R&S 현장관리 시스템 V18.2</h2>
+  <div class="section-title">✏️ 현장 작업 기록</div>
   
   <form id="reportForm">
-    <label>날짜 (Date)</label>
-    <input type="date" id="date" required>
+    <input type="date" id="date" class="input-yellow" required>
     
-    <label>작업번호 (No)</label>
-    <input type="text" id="no" placeholder="예: 1" required>
+    <select id="work_category" class="input-blue">
+      <option value="">📑 공종을 선택하세요</option>
+      <option value="방수">방수</option>
+      <option value="타일">타일</option>
+      <option value="설비">설비</option>
+      <option value="기타">기타</option>
+    </select>
     
-    <label>현장명 (Site)</label>
-    <input type="text" id="site" placeholder="예: 군산 미장동 제일풍경채" required>
+    <input type="text" id="no" class="input-blue" placeholder="🔍 관리 번호 입력" style="text-align: center;" required>
     
-    <div style="display: flex; gap: 10px;">
-      <div style="flex: 1;">
-        <label>동 (Dong)</label>
-        <input type="text" id="dong" placeholder="예: 101" required>
-      </div>
-      <div style="flex: 1;">
-        <label>호 (Ho)</label>
-        <input type="text" id="ho" placeholder="예: 502" required>
-      </div>
+    <input type="text" id="site" placeholder="현장명" required>
+    
+    <div class="grid-2">
+      <input type="text" id="dong" placeholder="동" required>
+      <input type="text" id="ho" placeholder="호" required>
+    </div>
+    
+    <div class="grid-2">
+      <input type="text" id="loc" placeholder="위치" required>
+      <input type="text" id="work" placeholder="공종 (상세)" required>
+    </div>
+    
+    <div class="grid-2">
+      <input type="text" id="type" placeholder="하자 유형" required>
+      <input type="text" id="contractor" placeholder="시공업체">
+    </div>
+    
+    <textarea id="desc" rows="3" placeholder="하자 내용 설명"></textarea>
+
+    <div class="photo-grid">
+      <label class="photo-box" id="box-before">
+        작업 전📷
+        <input type="file" id="img-before" accept="image/*" onchange="checkFile(this, 'box-before')">
+      </label>
+      <label class="photo-box" id="box-after">
+        작업 후📷
+        <input type="file" id="img-after" accept="image/*" onchange="checkFile(this, 'box-after')">
+      </label>
+      <label class="photo-box" id="box-cert">
+        완료확인서📋
+        <input type="file" id="img-cert" accept="image/*" onchange="checkFile(this, 'box-cert')">
+      </label>
     </div>
 
-    <label>위치 (Loc)</label>
-    <input type="text" id="loc" placeholder="예: 부부욕실" required>
-
-    <label>공종 (Work)</label>
-    <input type="text" id="work" placeholder="예: 방수" required>
-
-    <label>유형 (Type)</label>
-    <input type="text" id="type" placeholder="예: 누수" required>
-
-    <label>시공사 (Contractor)</label>
-    <input type="text" id="contractor" value="메트로 알엔에스" required>
-
-    <label>특이사항 (Desc)</label>
-    <textarea id="desc" rows="2" placeholder="작업 내용을 간단히 적어주세요"></textarea>
-
-    <label>📷 완료확인서 (사진 첨부)</label>
-    <input type="file" id="certFile" accept="image/*">
-
-    <label>📄 보고서 (PDF 첨부 - 선택)</label>
-    <input type="file" id="pdfFile" accept="application/pdf">
-
-    <button type="button" id="submitBtn" onclick="submitData()">🚀 서버로 전송하기</button>
+    <div class="btn-grid">
+      <button type="button" class="btn btn-green">임시 저장</button>
+      <button type="button" id="submitBtn" class="btn btn-purple" onclick="submitData()">최종 전송 (시트+드라이브)</button>
+    </div>
     <div id="statusMessage"></div>
   </form>
 </div>
@@ -71,7 +121,27 @@
   // 🌟 [매우 중요] 여기에 방금 발급받은 '새 구글 웹 앱 URL'을 붙여넣으세요!
   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyFvxP7hkH9Tgp11rhCh4PNH88C0_c0tZCO0fVhwBH9UnQYq_2PhK_r8NlCdGletPnDWw/exec";
 
-  // 파일을 Base64 데이터로 변환해주는 함수
+  // 오늘 날짜 기본 세팅
+  document.getElementById('date').valueAsDate = new Date();
+
+  // 파일 선택 시 테두리 초록색으로 변경
+  function checkFile(input, boxId) {
+    const box = document.getElementById(boxId);
+    if (input.files && input.files[0]) {
+      box.classList.add('active');
+      box.innerHTML = "✅ 선택됨<br><span style='font-size:0.7rem; color:#2ecc71;'>" + input.files[0].name.substring(0, 8) + "...</span>";
+      // input 태그가 덮어씌워지지 않도록 다시 추가
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'file';
+      hiddenInput.id = input.id;
+      hiddenInput.accept = 'image/*';
+      hiddenInput.style.display = 'none';
+      hiddenInput.onchange = function() { checkFile(this, boxId); };
+      box.appendChild(hiddenInput);
+    }
+  }
+
+  // Base64 인코딩 함수
   function getBase64(file) {
     return new Promise((resolve, reject) => {
       if (!file) { resolve(""); return; }
@@ -83,31 +153,24 @@
   }
 
   async function submitData() {
-    const btn = document.getElementById("submitBtn");
-    const statusMsg = document.getElementById("statusMessage");
-    
     if (WEB_APP_URL === "여기에_새로운_구글스크립트_주소_입력") {
-      alert("⚠️ 코드 수정 필요: 구글 스크립트 주소(WEB_APP_URL)를 먼저 입력해 주세요!");
+      alert("⚠️ 먼저 HTML 파일 안에 구글 스크립트 주소(WEB_APP_URL)를 입력해 주세요!");
       return;
     }
 
-    // 버튼 비활성화 및 메시지 표시
+    const btn = document.getElementById("submitBtn");
+    const statusMsg = document.getElementById("statusMessage");
+    
     btn.disabled = true;
-    btn.innerText = "⏳ 드라이브 저장 중... (약 5초 소요)";
+    btn.innerText = "⏳ 전송 중... (약 5~10초)";
     statusMsg.innerText = "";
-    statusMsg.style.color = "#2980b9";
 
     try {
-      // 1. 첨부파일 가져오기
-      const certFile = document.getElementById("certFile").files[0];
-      const pdfFile = document.getElementById("pdfFile").files[0];
-
-      // 2. 파일을 구글로 보낼 수 있게 Base64 텍스트로 변환
+      // 대표 사진(완료확인서)만 우선 구글로 전송 (구글 스크립트가 1개만 받도록 설정되어 있음)
+      // ※ 만약 3개 모두 전송하려면 구글 앱스 스크립트 코드 수정이 필요합니다!
+      const certFile = document.getElementById("img-cert").files[0];
       const certBase64 = await getBase64(certFile);
-      const pdfBase64 = await getBase64(pdfFile);
-      const certName = certFile ? certFile.name : '완료확인서.jpg';
 
-      // 3. 서버로 보낼 데이터 묶음 만들기 (구글 앱스 스크립트 포맷에 100% 맞춤)
       const requestData = {
         record: {
           date: document.getElementById("date").value,
@@ -122,11 +185,9 @@
           desc: document.getElementById("desc").value
         },
         certBase64: certBase64,
-        pdfBase64: pdfBase64,
-        certName: certName
+        certName: certFile ? certFile.name : '완료확인서.jpg'
       };
 
-      // 4. 구글 서버로 발사!
       const response = await fetch(WEB_APP_URL, {
         method: "POST",
         body: JSON.stringify(requestData)
@@ -136,20 +197,18 @@
 
       if (result.result === "success") {
         statusMsg.style.color = "#27ae60";
-        statusMsg.innerText = "✅ 기록 완료 (드라이브 저장 성공!)";
-        document.getElementById("reportForm").reset(); // 전송 후 양식 초기화
+        statusMsg.innerText = "✅ 성공적으로 전송되었습니다!";
+        setTimeout(() => location.reload(), 2000); // 2초 뒤 새로고침
       } else {
         throw new Error(result.message);
       }
 
     } catch (error) {
       statusMsg.style.color = "#e74c3c";
-      statusMsg.innerText = "❌ 전송 실패: 담당자에게 문의해 주세요.";
-      console.error(error);
+      statusMsg.innerText = "❌ 전송 실패: " + error.message;
     } finally {
-      // 버튼 다시 활성화
       btn.disabled = false;
-      btn.innerText = "🚀 서버로 전송하기";
+      btn.innerText = "최종 전송 (시트+드라이브)";
     }
   }
 </script>
