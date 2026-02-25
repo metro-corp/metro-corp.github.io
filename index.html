@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(주)METRO R&S 스마트 현장관리 시스템 V28.5</title>
+    <title>(주)METRO R&S 스마트 현장관리 시스템 V28.6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1e272e; --accent: #3498db; --success: #27ae60; --pdf: #e74c3c; --highlight: #e8f6f3; --share: #9b59b6; }
@@ -38,7 +38,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO 현장관리 시스템 V28.5</span>
+        <span>(주)METRO 현장관리 시스템 V28.6</span>
     </div>
 </header>
 
@@ -95,11 +95,11 @@
     </table>
     <div style="text-align:center; margin-top:20px;">
         <p style="font-weight:bold; margin-bottom:5px; font-size:16px;">[ 작 업 전 ]</p>
-        <img id="pdf-p1" style="width:100%; height:300px; object-fit:contain; border:1px solid #ddd;">
+        <img id="pdf-p1" style="width:480px; height:360px; object-fit:contain; border:1px solid #000; display:block; margin:0 auto;">
     </div>
     <div style="text-align:center; margin-top:15px;">
         <p style="font-weight:bold; margin-bottom:5px; font-size:16px;">[ 작 업 후 ]</p>
-        <img id="pdf-p2" style="width:100%; height:300px; object-fit:contain; border:1px solid #ddd;">
+        <img id="pdf-p2" style="width:480px; height:360px; object-fit:contain; border:1px solid #000; display:block; margin:0 auto;">
     </div>
 </div>
 
@@ -153,14 +153,29 @@
         document.getElementById('search-results').style.display='none';
     }
 
+    // 💡 핵심 1: 어떤 사진을 넣든 자동으로 완벽한 4:3 비율로 꽉 차게 잘라냅니다.
     function proc(input, pId, tId) {
         if(input.files && input.files[0]) {
             const r = new FileReader(); r.onload = (e) => {
                 const img = new Image(); img.onload = () => {
                     const c = document.createElement('canvas'); const ctx = c.getContext('2d');
-                    let w = img.width, h = img.height, max = 1200;
-                    if(w>h) { if(w>max) { h *= max/w; w = max; } } else { if(h>max) { w *= max/h; h = max; } }
-                    c.width = w; c.height = h; ctx.drawImage(img,0,0,w,h);
+                    let w = img.width, h = img.height;
+                    
+                    // 4:3 자동 크롭 계산식
+                    let targetRatio = 4 / 3;
+                    let sX = 0, sY = 0, sW = w, sH = h;
+                    
+                    if (w / h > targetRatio) { // 가로로 긴 사진일 경우 양옆을 자름
+                        sW = h * targetRatio;
+                        sX = (w - sW) / 2;
+                    } else { // 세로로 긴 사진일 경우 위아래를 자름
+                        sH = w / targetRatio;
+                        sY = (h - sH) / 2;
+                    }
+                    
+                    c.width = 1200; c.height = 900; // 출력될 사진의 최종 크기 (완벽한 4:3)
+                    ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
+                    
                     const final = (pId==='p3') ? c.toDataURL('image/jpeg',0.8) : addWM(c);
                     document.getElementById(pId).src = final; document.getElementById(pId).style.display='block'; document.getElementById(tId).style.display='none';
                 };
@@ -170,19 +185,27 @@
         }
     }
 
+    // 💡 핵심 2: 워터마크 여백(마진) 완전 제거 및 불투명 흰색 배경 적용
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
-        const bw = w * 0.5; const bh = h * 0.25; const x = 10, y = h - bh - 10; 
-        ctx.fillStyle = "rgba(255, 255, 255, 0.85)"; ctx.fillRect(x, y, bw, bh);
-        ctx.lineWidth = 2; ctx.strokeStyle = "black"; ctx.strokeRect(x, y, bw, bh); 
+        const bw = w * 0.45;  // 워터마크 가로 크기
+        const bh = h * 0.25;  // 워터마크 세로 크기
+        const x = 0, y = h - bh; // 🔥 여백 없이 좌측 하단 끝(0)에 딱 맞춤!
+
+        ctx.fillStyle = "white"; // 🔥 완전한 흰색(불투명)으로 덮어서 글씨 강조
+        ctx.fillRect(x, y, bw, bh);
+
+        ctx.lineWidth = 3; ctx.strokeStyle = "black"; ctx.strokeRect(x, y, bw, bh); 
+        
         const rows = 5; const rowH = bh / rows; const colW = bw * 0.25; 
         ctx.font = `bold ${Math.floor(rowH * 0.6)}px sans-serif`; ctx.fillStyle = "black"; ctx.textBaseline = "middle";
-        const d = getD(); const vls = [d.site, `${d.dong}-${d.ho} (${d.loc})`, (d.desc||"").substring(0,15), d.work, d.date];
+        const d = getD(); const vls = [d.site, `${d.dong}-${d.ho} (${d.loc})`, (d.desc||"").substring(0,18), d.work, d.date];
         const lbls = ["현 장", "위 치", "내 용", "공 정", "일 자"];
         for(let i=0; i<rows; i++) {
             const curY = y + (rowH * i);
             if (i > 0) { ctx.beginPath(); ctx.moveTo(x, curY); ctx.lineTo(x + bw, curY); ctx.stroke(); }
-            ctx.fillText(lbls[i], x + 10, curY + (rowH / 2)); ctx.fillText(vls[i], x + colW + 10, curY + (rowH / 2));    
+            ctx.fillText(lbls[i], x + 10, curY + (rowH / 2)); 
+            ctx.fillText(vls[i], x + colW + 10, curY + (rowH / 2));    
         }
         ctx.beginPath(); ctx.moveTo(x + colW, y); ctx.lineTo(x + colW, y + bh); ctx.stroke();
         return c.toDataURL('image/jpeg', 0.9);
