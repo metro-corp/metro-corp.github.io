@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 스마트 현장관리 시스템 V1.3</title>
+    <title>(주)METRO R&S 스마트 현장관리 시스템 V1.4</title>
     
     <meta property="og:title" content="(주)METRO R&S 스마트 현장관리 시스템">
     <meta property="og:description" content="현장 사진 촬영부터 PDF 보고서 자동 생성, 구글 드라이브 분류까지 한 번에 처리하는 통합 솔루션">
@@ -88,7 +88,6 @@
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-        /* 💡 수정됨: PDF 템플릿 크기를 가장 안정적이었던 비율로 고정 */
         #pdf-template { display: none; width: 794px; height: 1122px; padding: 40px; background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; overflow: hidden; }
     </style>
 </head>
@@ -97,7 +96,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO 현장관리 시스템 V1.3</span>
+        <span>(주)METRO 현장관리 시스템 V1.4</span>
     </div>
 </header>
 
@@ -330,7 +329,7 @@
         editingIndex = i; 
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; 
         
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // 💡 핵심 변경 2: 불러오기 시 무조건 맨 위로 튕겨 올라가는 스크롤 강제 이동 코드 삭제! (화면이 그 자리에 머뭅니다)
     }
 
     function delLocal(i) { 
@@ -352,7 +351,6 @@
         return new Blob(byteArrays, {type: contentType});
     }
 
-    // 💡 핵심 1: 사용자가 버튼을 누른 즉시 안전한 파일(Blob)로 변환해 바로 다운로드!
     function downloadImg(dataUrl, filename) {
         if (!dataUrl || dataUrl.length < 100) return;
         try {
@@ -363,13 +361,14 @@
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = blobUrl;
-            a.download = filename; // 💡 크롬/삼성인터넷에서는 이 이름을 정확히 인식합니다.
+            a.download = filename; 
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
             
-            // 다 쓴 주소는 1초 뒤에 메모리에서 안전하게 폐기
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+            }, 2000);
         } catch(e) { console.error("다운로드 에러:", e); }
     }
 
@@ -377,15 +376,18 @@
         const btn = document.getElementById('btn-send'); const d = getD();
         if(!currentSid || !d.dong || !d.ho) return alert("현장 및 정보를 확인하세요.");
         
-        // 💡 핵심 1 적용: 버튼을 누르자마자 기다리지 않고 사진부터 스마트폰에 꽂아 넣습니다.
         const baseName = `${d.dong}동_${d.ho}호`;
-        downloadImg(d.p1, `${baseName}_작업전.jpg`);
-        downloadImg(d.p2, `${baseName}_작업후.jpg`);
+        
+        // 💡 핵심 변경 1: 작업전 사진 다운로드 후, 정확히 0.8초 뒤에 작업후 사진을 다운로드합니다 (스팸 방지 우회)
+        if (d.p1 && d.p1.length > 100) downloadImg(d.p1, `${baseName}_작업전.jpg`);
+        
+        setTimeout(() => {
+            if (d.p2 && d.p2.length > 100) downloadImg(d.p2, `${baseName}_작업후.jpg`);
+        }, 800);
 
         btn.innerHTML = "⏳ 전송 중입니다..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
         
         try {
-            // 💡 핵심 2: PDF 변환 직전에 스마트폰 화면을 강제로 맨 위로 올려서 '여백 버그'를 원천 차단합니다.
             const currentScroll = window.scrollY;
             window.scrollTo(0, 0);
 
@@ -396,14 +398,13 @@
             
             const el = document.getElementById('pdf-template'); el.style.display = 'block';
             
-            // 💡 핵심 2 적용: html2canvas 옵션에 scrollY: 0 을 추가하여 캡처 기준점을 맨 위로 강제 고정
             const pdf = await html2pdf().set({ 
                 margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
             }).from(el).output('datauristring');
             
             el.style.display = 'none';
-            window.scrollTo(0, currentScroll); // 캡처가 끝나면 원래 보던 화면 위치로 돌려놓습니다.
+            window.scrollTo(0, currentScroll); 
 
             const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: (d.p1||"").split(',')[1]||"", p2Base64: (d.p2||"").split(',')[1]||"", p3Base64: (d.p3||"").split(',')[1]||"" };
             const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
