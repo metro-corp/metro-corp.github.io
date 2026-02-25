@@ -30,7 +30,18 @@
         table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; margin-top: 10px; }
         th, td { border-bottom: 1px solid #eee; padding: 10px 4px; text-align: center; }
         th { background: #f8f9fa; }
-        #pdf-template { display: none; width: 794px; padding: 40px; background: white; font-family: 'Malgun Gothic'; }
+        
+        /* PDF 1장 맞춤 고정 사이즈 */
+        #pdf-template { 
+            display: none; 
+            width: 794px; 
+            height: 1122px; 
+            padding: 40px; 
+            background: white; 
+            font-family: 'Malgun Gothic', sans-serif; 
+            box-sizing: border-box; 
+            overflow: hidden; 
+        }
     </style>
 </head>
 <body>
@@ -77,28 +88,34 @@
     </div>
 
     <div class="section">
-        <div class="section-title">📋 작업 완료 목록 (<span id="count">0</span>건)</div>
+        <div class="section-title">📋 작업 임시 저장 목록 (<span id="count">0</span>건)</div>
         <table>
-            <thead><tr><th style="width:15%">No</th><th style="width:45%">현장/동/호</th><th style="width:25%">공종</th><th style="width:15%">관리</th></tr></thead>
-            <tbody id="list-body"><tr><td colspan="4" style="padding:20px; color:#999;">저장된 작업이 없습니다.</td></tr></tbody>
+            <thead><tr><th style="width:10%">No</th><th style="width:40%">동/호 (공종)</th><th style="width:50%">관리</th></tr></thead>
+            <tbody id="list-body"><tr><td colspan="3" style="padding:20px; color:#999;">저장된 작업이 없습니다.</td></tr></tbody>
         </table>
     </div>
 </div>
 
 <div id="pdf-template">
-    <h2 style="text-align:center;">하자보수 작업 완료 사진대지</h2>
-    <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
-        <tr><td style="border:1px solid #000; padding:10px; background:#eee;">일자</td><td id="pdf-date" style="border:1px solid #000; padding:10px;"></td><td style="border:1px solid #000; padding:10px; background:#eee;">시공업체</td><td id="pdf-contractor" style="border:1px solid #000; padding:10px;"></td></tr>
-        <tr><td style="border:1px solid #000; padding:10px; background:#eee;">현장명</td><td id="pdf-site" colspan="3" style="border:1px solid #000; padding:10px;"></td></tr>
-        <tr><td style="border:1px solid #000; padding:10px; background:#eee;">동/호</td><td id="pdf-unit" style="border:1px solid #000; padding:10px;"></td><td style="border:1px solid #000; padding:10px; background:#eee;">위치</td><td id="pdf-loc" style="border:1px solid #000; padding:10px;"></td></tr>
-        <tr><td style="border:1px solid #000; padding:10px; background:#eee;">하자 내용 설명</td><td id="pdf-desc" colspan="3" style="border:1px solid #000; padding:10px; height:60px;"></td></tr>
+    <h2 style="text-align:center; margin-top:0; margin-bottom:15px; font-size:24px;">하자보수 작업 완료 사진대지</h2>
+    <table style="width:100%; border-collapse:collapse; border:2px solid #000; font-size:14px;">
+        <tr><td style="border:1px solid #000; padding:8px; background:#eee; font-weight:bold; width:15%;">일자</td><td id="pdf-date" style="border:1px solid #000; padding:8px; width:35%;"></td><td style="border:1px solid #000; padding:8px; background:#eee; font-weight:bold; width:15%;">시공업체</td><td id="pdf-contractor" style="border:1px solid #000; padding:8px; width:35%;"></td></tr>
+        <tr><td style="border:1px solid #000; padding:8px; background:#eee; font-weight:bold;">현장명</td><td id="pdf-site" colspan="3" style="border:1px solid #000; padding:8px;"></td></tr>
+        <tr><td style="border:1px solid #000; padding:8px; background:#eee; font-weight:bold;">동/호</td><td id="pdf-unit" style="border:1px solid #000; padding:8px;"></td><td style="border:1px solid #000; padding:8px; background:#eee; font-weight:bold;">위치</td><td id="pdf-loc" style="border:1px solid #000; padding:8px;"></td></tr>
+        <tr><td style="border:1px solid #000; padding:8px; background:#eee; font-weight:bold;">설명</td><td id="pdf-desc" colspan="3" style="border:1px solid #000; padding:8px; height:50px;"></td></tr>
     </table>
-    <div style="text-align:center; margin-top:20px;"><p>[ 작 업 전 ]</p><img id="pdf-p1" style="width:100%; max-height:380px; object-fit:contain;"></div>
-    <div style="text-align:center; margin-top:20px;"><p>[ 작 업 후 ]</p><img id="pdf-p2" style="width:100%; max-height:380px; object-fit:contain;"></div>
+    <div style="text-align:center; margin-top:20px;">
+        <p style="font-weight:bold; margin-bottom:5px; font-size:16px;">[ 작 업 전 ]</p>
+        <img id="pdf-p1" style="width:100%; height:300px; object-fit:contain; border:1px solid #ddd;">
+    </div>
+    <div style="text-align:center; margin-top:15px;">
+        <p style="font-weight:bold; margin-bottom:5px; font-size:16px;">[ 작 업 후 ]</p>
+        <img id="pdf-p2" style="width:100%; height:300px; object-fit:contain; border:1px solid #ddd;">
+    </div>
 </div>
 
 <script>
-    // 🌟 [필수] 방금 2단계에서 새로 발급받은 배포 URL을 넣어주세요!
+    // 🌟 대표님의 기존 통신 URL
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyfvRyEKhbbH9s6F7p9YT7BaUSwNkkJaLzydpte09vCCvCz7nfBUN6zyFUwMFBppVLA/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -111,7 +128,6 @@
             const r = await fetch(`${MY_GAS_URL}?mode=getSites&t=${new Date().getTime()}`);
             const j = await r.json();
             if(j.result==='success') {
-                // 💡 만약 데이터가 없으면 0개라고 표시하여 문제를 즉시 파악하게 합니다!
                 s.innerHTML = `<option value="">🏢 현장을 선택하세요 (불러온 현장: ${j.sites.length}개)</option>`;
                 j.sites.forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`);
             } else { throw new Error(j.message); }
@@ -126,7 +142,6 @@
         document.getElementById('site').value = s.options[s.selectedIndex].text;
         const d = document.getElementById('db-sheet'); d.innerHTML = '<option value="">⏳ 데이터 로딩 중...</option>';
         try {
-            // 이제 currentSid는 암호같은 ID가 아니라 'https://...' 형태의 URL입니다!
             const r = await fetch(`${MY_GAS_URL}?targetId=${encodeURIComponent(currentSid)}&t=${new Date().getTime()}`);
             const j = await r.json();
             if(j.result==='success') {
@@ -174,28 +189,87 @@
 
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
-        const bw = w*0.5, bh = h*0.25, x=0, y=h-bh;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.8)"; ctx.fillRect(x,y,bw,bh);
-        ctx.font = `bold ${Math.floor(h*0.025)}px sans-serif`; ctx.fillStyle = "black";
-        const lh = bh/5, d = getD();
-        const vls = [d.site, `${d.dong}-${d.ho} (${d.loc})`, (d.desc||"").substring(0,12), d.work, d.date];
-        const lbls = ["현 장","위 치","내 용","공 정","일 자"];
-        for(let i=0; i<5; i++) ctx.fillText(`${lbls[i]}: ${vls[i]}`, x+10, y+(lh*i)+(lh/2)+5);
-        return c.toDataURL('image/jpeg',0.9);
+        const bw = w * 0.5;  
+        const bh = h * 0.25; 
+        const x = 10, y = h - bh - 10; 
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.85)"; 
+        ctx.fillRect(x, y, bw, bh);
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(x, y, bw, bh); 
+
+        const rows = 5;
+        const rowH = bh / rows;
+        const colW = bw * 0.25; 
+
+        ctx.font = `bold ${Math.floor(rowH * 0.6)}px sans-serif`;
+        ctx.fillStyle = "black";
+        ctx.textBaseline = "middle";
+
+        const d = getD();
+        const vls = [d.site, `${d.dong}-${d.ho} (${d.loc})`, (d.desc||"").substring(0,15), d.work, d.date];
+        const lbls = ["현 장", "위 치", "내 용", "공 정", "일 자"];
+
+        for(let i=0; i<rows; i++) {
+            const curY = y + (rowH * i);
+            if (i > 0) {
+                ctx.beginPath();
+                ctx.moveTo(x, curY);
+                ctx.lineTo(x + bw, curY);
+                ctx.stroke();
+            }
+            ctx.fillText(lbls[i], x + 10, curY + (rowH / 2));          
+            ctx.fillText(vls[i], x + colW + 10, curY + (rowH / 2));    
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(x + colW, y);
+        ctx.lineTo(x + colW, y + bh);
+        ctx.stroke();
+
+        return c.toDataURL('image/jpeg', 0.9);
     }
 
     function getD() { return { date: document.getElementById('today-date').value, site: document.getElementById('site').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value }; }
 
     function saveLocal() {
-        const d = getD(); if(!d.dong || !d.ho) return alert("정보를 입력하세요.");
+        const d = getD(); if(!d.dong || !d.ho) return alert("동, 호수 정보를 입력하세요.");
         savedList.push(d); updateTable(); clearInputs();
     }
 
     function updateTable() {
         const b = document.getElementById('list-body');
-        b.innerHTML = savedList.length ? savedList.map((r, i) => `<tr><td>${i+1}</td><td>${r.site}<br>${r.dong}-${r.ho}</td><td>${r.work}</td><td><button onclick="delLocal(${i})" style="background:#e74c3c; padding:5px; border-radius:4px; font-size:11px; color:white; border:none;">삭제</button></td></tr>`).join('') : '<tr><td colspan="4" style="padding:20px; color:#999;">저장된 작업이 없습니다.</td></tr>';
+        b.innerHTML = savedList.length ? savedList.map((r, i) => 
+            `<tr>
+                <td>${i+1}</td>
+                <td style="text-align:left; padding-left:10px;">${r.dong}동 ${r.ho}호<br><span style="color:var(--accent); font-size:11px;">[${r.work}]</span></td>
+                <td>
+                    <div style="display:flex; gap:4px; justify-content:center;">
+                        <button onclick="loadLocal(${i})" style="background:#3498db; padding:6px; border-radius:4px; font-size:11px; color:white; border:none; flex:1;">불러오기</button>
+                        <button onclick="delLocal(${i})" style="background:#e74c3c; padding:6px; border-radius:4px; font-size:11px; color:white; border:none; flex:1;">삭제</button>
+                    </div>
+                </td>
+            </tr>`
+        ).join('') : '<tr><td colspan="3" style="padding:20px; color:#999;">저장된 작업이 없습니다.</td></tr>';
         document.getElementById('count').innerText = savedList.length;
     }
+    
+    function loadLocal(i) {
+        const d = savedList[i];
+        document.getElementById('today-date').value = d.date;
+        document.getElementById('dong').value = d.dong;
+        document.getElementById('ho').value = d.ho;
+        document.getElementById('loc').value = d.loc;
+        document.getElementById('work').value = d.work;
+        document.getElementById('type').value = d.type;
+        document.getElementById('contractor').value = d.contractor;
+        document.getElementById('desc').value = d.desc;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        alert(`✅ ${d.dong}동 ${d.ho}호 데이터를 불러왔습니다. (사진은 다시 등록해 주세요!)`);
+    }
+
     function delLocal(i) { savedList.splice(i, 1); updateTable(); }
 
     async function send() {
@@ -207,8 +281,17 @@
             document.getElementById('pdf-site').innerText = d.site; document.getElementById('pdf-unit').innerText = `${d.dong}동 ${d.ho}호`;
             document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
             document.getElementById('pdf-p1').src = document.getElementById('p1').src || ""; document.getElementById('pdf-p2').src = document.getElementById('p2').src || "";
+            
             const el = document.getElementById('pdf-template'); el.style.display = 'block';
-            const pdf = await html2pdf().set({ margin: 0, html2canvas: { scale:2 }, jsPDF: { format:'a4', orientation:'portrait' } }).from(el).output('datauristring');
+            
+            const pdf = await html2pdf().set({ 
+                margin: 0, 
+                filename: `보고서_${d.dong}동_${d.ho}호.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+            }).from(el).output('datauristring');
+            
             el.style.display = 'none';
             const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: document.getElementById('p1').src.split(',')[1]||"", p2Base64: document.getElementById('p2').src.split(',')[1]||"", p3Base64: document.getElementById('p3').src.split(',')[1]||"" };
             const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -216,6 +299,7 @@
             if(j.result==='success') { alert("✅ 전송 완료!"); location.reload(); }
         } catch(e) { alert("❌ 전송 실패"); btn.disabled = false; btn.innerText = "🚀 최종 전송 (PDF+사진4종)"; console.error(e); }
     }
+    
     function clearInputs() { ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); }
 </script>
 </body>
