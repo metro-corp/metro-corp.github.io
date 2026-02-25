@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(주)METRO R&S 스마트 현장관리 시스템 V28.0</title>
+    <title>(주)METRO R&S 스마트 현장관리 시스템 V28.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1e272e; --accent: #3498db; --success: #27ae60; --pdf: #e74c3c; --highlight: #e8f6f3; --share: #9b59b6; }
@@ -38,7 +38,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO 현장관리 시스템 V28.0</span>
+        <span>(주)METRO 현장관리 시스템 V28.4</span>
     </div>
 </header>
 
@@ -59,11 +59,11 @@
             <input type="text" id="ho" placeholder="호" oninput="search()">
             <div id="search-results"></div>
             <input type="text" id="site" placeholder="현장명" readonly class="full">
-            <input type="text" id="loc" placeholder="위치 (Loc)">
-            <input type="text" id="work" placeholder="공종 (Work)">
-            <input type="text" id="type" placeholder="하자 유형 (Type)">
-            <input type="text" id="contractor" placeholder="시공업체 (Contractor)">
-            <textarea id="desc" placeholder="하자 내용 설명 (Desc)" class="full"></textarea>
+            <input type="text" id="loc" placeholder="위치">
+            <input type="text" id="work" placeholder="공종">
+            <input type="text" id="type" placeholder="하자 유형">
+            <input type="text" id="contractor" placeholder="시공업체">
+            <textarea id="desc" placeholder="하자 내용 설명" class="full"></textarea>
         </div>
         <div class="photo-area">
             <div class="photo-box" onclick="document.getElementById('f1').click()"><span id="t1">작업 전📷</span><img id="p1" class="preview-img"><input type="file" id="f1" hidden accept="image/*" onchange="proc(this,'p1','t1')"></div>
@@ -72,7 +72,7 @@
         </div>
         <div class="btn-group">
             <button class="btn-save" onclick="saveLocal()">임시 저장</button>
-            <button class="btn-send" id="btn-send" onclick="send()">🚀 최종 전송 (PDF+사진4종)</button>
+            <button class="btn-send" id="btn-send" onclick="send()">🚀 최종 전송</button>
         </div>
     </div>
 
@@ -105,7 +105,9 @@
 
 <script>
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyfvRyEKhbbH9s6F7p9YT7BaUSwNkkJaLzydpte09vCCvCz7nfBUN6zyFUwMFBppVLA/exec"; 
+    
     let cloudDB = {}; let currentSid = ""; let savedList = [];
+    let editingIndex = -1; 
 
     window.onload = () => { getSites(); document.getElementById('today-date').value = new Date().toISOString().substring(0, 10); };
 
@@ -186,19 +188,24 @@
         return c.toDataURL('image/jpeg', 0.9);
     }
 
-    // 💡 핵심 변경: 저장할 때 사진 1,2,3 데이터도 같이 저장합니다!
     function getD() { 
         return { 
             date: document.getElementById('today-date').value, site: document.getElementById('site').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value,
-            p1: document.getElementById('p1').src, // 사진 1 저장
-            p2: document.getElementById('p2').src, // 사진 2 저장
-            p3: document.getElementById('p3').src  // 사진 3 저장
+            p1: document.getElementById('p1').src, p2: document.getElementById('p2').src, p3: document.getElementById('p3').src 
         }; 
     }
 
     function saveLocal() {
         const d = getD(); if(!d.dong || !d.ho) return alert("동, 호수 정보를 입력하세요.");
-        savedList.push(d); updateTable(); clearInputs();
+        
+        if (editingIndex > -1) {
+            savedList[editingIndex] = d; 
+        } else {
+            savedList.push(d); 
+        }
+        
+        updateTable(); 
+        clearInputs();
     }
 
     function updateTable() {
@@ -218,33 +225,28 @@
         document.getElementById('count').innerText = savedList.length;
     }
     
-    // 💡 핵심 변경: 불러올 때 사진이 있으면 복구해 줍니다!
     function loadLocal(i) {
         const d = savedList[i];
         document.getElementById('today-date').value = d.date; document.getElementById('dong').value = d.dong; document.getElementById('ho').value = d.ho; document.getElementById('loc').value = d.loc; document.getElementById('work').value = d.work; document.getElementById('type').value = d.type; document.getElementById('contractor').value = d.contractor; document.getElementById('desc').value = d.desc;
         
-        // 사진 복구 로직
         [1, 2, 3].forEach(num => {
-            const imgEl = document.getElementById('p' + num);
-            const textEl = document.getElementById('t' + num);
-            const imgSrc = d['p' + num];
-            
-            if (imgSrc && imgSrc.length > 100) { // 저장된 사진이 있으면
-                imgEl.src = imgSrc;
-                imgEl.style.display = 'block';
-                textEl.style.display = 'none';
-            } else { // 사진이 없으면 
-                imgEl.src = '';
-                imgEl.style.display = 'none';
-                textEl.style.display = 'block';
-            }
+            const imgEl = document.getElementById('p' + num); const textEl = document.getElementById('t' + num); const imgSrc = d['p' + num];
+            if (imgSrc && imgSrc.length > 100) { imgEl.src = imgSrc; imgEl.style.display = 'block'; textEl.style.display = 'none'; } 
+            else { imgEl.src = ''; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
         });
 
+        editingIndex = i; 
+        document.querySelector('.btn-save').innerText = "💾 수정 저장"; 
+        
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        alert(`✅ ${d.dong}동 ${d.ho}호 데이터와 사진을 완벽하게 불러왔습니다!`);
     }
 
-    function delLocal(i) { savedList.splice(i, 1); updateTable(); }
+    function delLocal(i) { 
+        savedList.splice(i, 1); 
+        if (editingIndex === i) clearInputs(); 
+        else if (editingIndex > i) editingIndex--; 
+        updateTable(); 
+    }
 
     async function send() {
         const btn = document.getElementById('btn-send'); const d = getD();
@@ -268,10 +270,16 @@
             const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             const j = await r.json();
             if(j.result==='success') { alert("✅ 전송 완료!"); location.reload(); }
-        } catch(e) { alert("❌ 전송 실패"); btn.disabled = false; btn.innerText = "🚀 최종 전송 (PDF+사진4종)"; }
+        // 💡 에러 시 버튼 텍스트도 원래대로 복구되도록 함께 수정했습니다.
+        } catch(e) { alert("❌ 전송 실패"); btn.disabled = false; btn.innerText = "🚀 최종 전송"; }
     }
     
-    function clearInputs() { ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); }
+    function clearInputs() { 
+        ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
+        [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
+        editingIndex = -1; 
+        document.querySelector('.btn-save').innerText = "임시 저장"; 
+    }
 </script>
 </body>
 </html>
