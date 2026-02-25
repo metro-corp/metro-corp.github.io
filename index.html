@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(주)METRO R&S 스마트 현장관리 시스템 V28.4</title>
+    <title>(주)METRO R&S 스마트 현장관리 시스템 V28.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #1e272e; --accent: #3498db; --success: #27ae60; --pdf: #e74c3c; --highlight: #e8f6f3; --share: #9b59b6; }
@@ -38,7 +38,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO 현장관리 시스템 V28.4</span>
+        <span>(주)METRO 현장관리 시스템 V28.5</span>
     </div>
 </header>
 
@@ -79,7 +79,7 @@
     <div class="section">
         <div class="section-title">📋 작업 임시 저장 목록 (<span id="count">0</span>건)</div>
         <table>
-            <thead><tr><th style="width:10%">No</th><th style="width:40%">동/호 (공종)</th><th style="width:50%">관리</th></tr></thead>
+            <thead><tr><th style="width:10%">No</th><th style="width:50%">동/호 (공종)</th><th style="width:40%">관리</th></tr></thead>
             <tbody id="list-body"><tr><td colspan="3" style="padding:20px; color:#999;">저장된 작업이 없습니다.</td></tr></tbody>
         </table>
     </div>
@@ -213,11 +213,13 @@
         b.innerHTML = savedList.length ? savedList.map((r, i) => 
             `<tr>
                 <td>${i+1}</td>
-                <td style="text-align:left; padding-left:10px;">${r.dong}동 ${r.ho}호<br><span style="color:var(--accent); font-size:11px;">[${r.work}]</span></td>
+                <td style="text-align:left; padding-left:10px; word-break:keep-all;">
+                    ${r.dong}동 ${r.ho}호 <span style="color:var(--accent); font-weight:bold;">[${r.work}]</span>
+                </td>
                 <td>
-                    <div style="display:flex; gap:4px; justify-content:center;">
-                        <button onclick="loadLocal(${i})" style="background:#3498db; padding:6px; border-radius:4px; font-size:11px; color:white; border:none; flex:1;">불러오기</button>
-                        <button onclick="delLocal(${i})" style="background:#e74c3c; padding:6px; border-radius:4px; font-size:11px; color:white; border:none; flex:1;">삭제</button>
+                    <div style="display:flex; gap:6px; justify-content:center;">
+                        <button onclick="loadLocal(${i})" style="background:#3498db; padding:6px 10px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">불러오기</button>
+                        <button onclick="delLocal(${i})" style="background:#e74c3c; padding:6px 10px; border-radius:4px; font-size:12px; color:white; border:none; cursor:pointer;">삭제</button>
                     </div>
                 </td>
             </tr>`
@@ -270,7 +272,6 @@
             const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             const j = await r.json();
             if(j.result==='success') { alert("✅ 전송 완료!"); location.reload(); }
-        // 💡 에러 시 버튼 텍스트도 원래대로 복구되도록 함께 수정했습니다.
         } catch(e) { alert("❌ 전송 실패"); btn.disabled = false; btn.innerText = "🚀 최종 전송"; }
     }
     
