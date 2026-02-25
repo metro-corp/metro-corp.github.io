@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(주)METRO R&S 스마트 현장관리 시스템 V30.2</title>
+    <title>(주)METRO R&S 스마트 현장관리 시스템 V30.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -70,7 +70,9 @@
         th { background: var(--input-bg); font-weight: 700; color: var(--primary-dark); }
         th:first-child { border-top-left-radius: 12px; } th:last-child { border-top-right-radius: 12px; }
         tr:last-child td { border-bottom: none; }
-        .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; flex: 1; }
+        
+        /* 💡 좁은 화면에서도 텍스트가 줄바꿈되지 않도록 강력한 고정 옵션 추가 */
+        .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
@@ -82,7 +84,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO 현장관리 시스템 V30.2</span>
+        <span>(주)METRO 현장관리 시스템 V30.3</span>
     </div>
 </header>
 
@@ -117,7 +119,7 @@
                 <img id="p1" class="preview-img"><input type="file" id="f1" hidden accept="image/*" onchange="proc(this,'p1','t1')">
             </div>
             <div class="photo-box" onclick="document.getElementById('f2').click()">
-                <div style="font-size: 24px;">🛠️</div><span id="t2">작업 후</span>
+                <div style="font-size: 24px;">📷</div><span id="t2">작업 후</span>
                 <img id="p2" class="preview-img"><input type="file" id="f2" hidden accept="image/*" onchange="proc(this,'p2','t2')">
             </div>
             <div class="photo-box" onclick="document.getElementById('f3').click()">
@@ -134,7 +136,7 @@
     <div class="section">
         <div class="section-title"><span>목록</span> 임시 저장 내역 (<span id="count" style="color:var(--accent);">0</span>건)</div>
         <table>
-            <thead><tr><th style="width:12%">No</th><th style="width:48%">동/호 (공종)</th><th style="width:40%">관리</th></tr></thead>
+            <thead><tr><th style="width:10%">No</th><th style="width:50%">동/호 (공종)</th><th style="width:40%">관리</th></tr></thead>
             <tbody id="list-body"><tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr></tbody>
         </table>
     </div>
@@ -172,7 +174,6 @@
             const r = await fetch(`${MY_GAS_URL}?mode=getSites&t=${new Date().getTime()}`);
             const j = await r.json();
             if(j.result==='success') {
-                // 💡 (3개 로드됨) 텍스트 삭제 완료!
                 s.innerHTML = `<option value="">🏢 현장을 선택해주세요</option>`;
                 j.sites.forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`);
             } else { throw new Error(j.message); }
@@ -278,17 +279,18 @@
         updateTable(); clearInputs();
     }
 
+    // 💡 핵심 변경: <br> 제거 및 여백 조정으로 모바일에서도 무조건 1줄로 표시되게 수정
     function updateTable() {
         const b = document.getElementById('list-body');
         b.innerHTML = savedList.length ? savedList.map((r, i) => 
             `<tr>
                 <td style="font-weight:700; color:var(--text-sub);">${i+1}</td>
-                <td style="text-align:left; padding-left:14px; word-break:keep-all;">
-                    <span style="font-weight:700;">${r.dong}동 ${r.ho}호</span> <br>
-                    <span style="color:var(--accent); font-weight:700; font-size:12px; background:#e0e7ff; padding:2px 6px; border-radius:4px; margin-top:4px; display:inline-block;">${r.work}</span>
+                <td style="text-align:left; padding-left:10px; word-break:keep-all; white-space:nowrap;">
+                    <span style="font-weight:700;">${r.dong}동 ${r.ho}호</span>
+                    <span style="color:var(--accent); font-weight:700; font-size:12px; background:#e0e7ff; padding:2px 6px; border-radius:4px; margin-left:4px; vertical-align:middle;">${r.work}</span>
                 </td>
-                <td>
-                    <div style="display:flex; gap:6px; justify-content:center;">
+                <td style="padding-left:4px; padding-right:4px;">
+                    <div style="display:flex; gap:4px; justify-content:center;">
                         <button class="action-btn" onclick="loadLocal(${i})">불러오기</button>
                         <button class="action-btn del" onclick="delLocal(${i})">삭제</button>
                     </div>
