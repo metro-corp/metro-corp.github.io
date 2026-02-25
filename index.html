@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>(주)METRO R&S 스마트 현장관리 시스템 V30.3</title>
+    <title>(주)METRO R&S 스마트 현장관리 시스템 V30.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -11,8 +11,10 @@
         :root { 
             --bg-body: #f4f7f9; 
             --surface: #ffffff;
-            --primary-dark: #1e293b; 
-            --primary-light: #334155;
+            /* 💎 핵심 변경: 더 깊고 풍부한 프리미엄 네이비 색상으로 변경 */
+            --primary-dark: #0f172a;  /* 기존보다 훨씬 깊은 미드나잇 블루 */
+            --primary-light: #1e3a8a; /* 풍부하고 진한 로얄 블루 */
+            
             --accent: #3b82f6; 
             --accent-hover: #2563eb;
             --success: #10b981; 
@@ -27,6 +29,7 @@
 
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--bg-body); font-size: 15px; color: var(--text-main); padding-bottom: 60px; line-height: 1.5; }
         
+        /* 변경된 프리미엄 컬러 변수가 그라데이션에 자동으로 적용됩니다 */
         header { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: white; padding: 18px; font-weight: 700; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 17px; letter-spacing: 0.5px; }
         
         .container { padding: 15px; max-width: 800px; margin: auto; }
@@ -71,7 +74,6 @@
         th:first-child { border-top-left-radius: 12px; } th:last-child { border-top-right-radius: 12px; }
         tr:last-child td { border-bottom: none; }
         
-        /* 💡 좁은 화면에서도 텍스트가 줄바꿈되지 않도록 강력한 고정 옵션 추가 */
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
@@ -84,7 +86,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO 현장관리 시스템 V30.3</span>
+        <span>(주)METRO 현장관리 시스템 V30.4</span>
     </div>
 </header>
 
@@ -279,7 +281,6 @@
         updateTable(); clearInputs();
     }
 
-    // 💡 핵심 변경: <br> 제거 및 여백 조정으로 모바일에서도 무조건 1줄로 표시되게 수정
     function updateTable() {
         const b = document.getElementById('list-body');
         b.innerHTML = savedList.length ? savedList.map((r, i) => 
