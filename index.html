@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V3.4</title>
+    <title>(주)METRO R&S 현장관리 시스템 V3.6</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -69,22 +69,14 @@
 
         #search-results { 
             display: none; background: #fff; border: 2px solid #bae6fd; border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2); 
-            max-height: 280px; overflow-y: auto; overflow-x: hidden; 
-            overscroll-behavior: contain; 
-            -webkit-overflow-scrolling: touch;
-            position: relative;
+            position: relative; overflow: hidden;
         }
-        
-        /* 💡 수정됨: 스크롤바 두께를 14px로 대폭 키우고, 색상을 진하게 변경하여 터치하기 쉽게 만듦 */
-        #search-results::-webkit-scrollbar { width: 14px; }
-        #search-results::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-        #search-results::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; border: 2px solid #f1f5f9; }
 
-        .result-item { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; text-align: left; transition: background 0.2s; }
+        .result-item { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; text-align: left; transition: background 0.2s; }
         .result-item:last-child { border-bottom: none; }
         .result-item:hover { background: #f0f9ff; }
-        .result-item strong { display: block; font-size: 14px; color: var(--primary-dark); margin-bottom: 4px; }
-        .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text-sub); font-size: 13px; }
+        .result-item strong { display: block; font-size: 15px; color: var(--primary-dark); margin-bottom: 6px; }
+        .ellipsis { white-space: normal; display: block; color: var(--text-sub); font-size: 14px; line-height: 1.4; word-break: keep-all; } 
 
         .photo-area { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
         
@@ -148,7 +140,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V3.4</span>
+        <span>(주)METRO R&S 현장관리 시스템 V3.6</span>
     </div>
 </header>
 
@@ -189,7 +181,7 @@
                 <img id="p2" class="preview-img"><input type="file" id="f2" hidden accept="image/*" onchange="proc(this,'p2','t2')">
             </div>
             <div class="photo-box" onclick="document.getElementById('f3').click()">
-                <div style="font-size: 24px;">📋</div><span id="t3">확인서</span>
+                <div style="font-size: 24px;">📋</div><span id="t3">완료확인서</span>
                 <img id="p3" class="preview-img"><input type="file" id="f3" hidden accept="image/*" onchange="proc(this,'p3','t3')">
             </div>
         </div>
@@ -267,9 +259,9 @@
         if(!sheet || !d || !h) { res.style.display='none'; return; }
         const matches = (cloudDB[sheet] || []).filter(v => String(v.dong)===d && String(v.ho)===h);
         if(matches.length>0) {
-            let htmlStr = `<div style="position:sticky; top:0; background:#f0f9ff; padding:10px 14px; font-weight:800; font-size:13px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+            let htmlStr = `<div style="position:sticky; top:0; background:rgba(240, 249, 255, 0.95); backdrop-filter:blur(5px); padding:12px 16px; font-weight:800; font-size:14px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
                 <span>🔍 일치하는 내역 ${matches.length}건</span>
-                <span onclick="document.getElementById('search-results').style.display='none'" style="background:#e0f2fe; padding:4px 10px; border-radius:6px; cursor:pointer; color:#0ea5e9;">닫기 ✕</span>
+                <span onclick="document.getElementById('search-results').style.display='none'" style="background:#0ea5e9; padding:6px 14px; border-radius:8px; cursor:pointer; color:#ffffff; font-weight:700; box-shadow:0 2px 5px rgba(14,165,233,0.3);">닫기 ✕</span>
             </div>`;
             
             matches.forEach(v => {
