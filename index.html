@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V3.3</title>
+    <title>(주)METRO R&S 현장관리 시스템 V3.4</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -67,20 +67,19 @@
         #site-select { font-weight: 700; color: var(--accent-hover); background-color: #f0f9ff; border-color: #bae6fd; font-size: 16px; }
         #db-sheet { font-weight: 700; color: var(--success); background-color: #ecfdf5; border-color: #a7f3d0; }
 
-        /* 💡 핵심 변경: 검색 목록의 디자인, 높이, 스크롤 독립 속성 적용 */
         #search-results { 
             display: none; background: #fff; border: 2px solid #bae6fd; border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2); 
             max-height: 280px; overflow-y: auto; overflow-x: hidden; 
-            overscroll-behavior: contain; /* 화면 전체가 흔들리는 현상 차단! */
+            overscroll-behavior: contain; 
             -webkit-overflow-scrolling: touch;
             position: relative;
         }
-        /* 스크롤바 커스텀 */
-        #search-results::-webkit-scrollbar { width: 8px; }
-        #search-results::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
-        #search-results::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* 💡 수정됨: 스크롤바 두께를 14px로 대폭 키우고, 색상을 진하게 변경하여 터치하기 쉽게 만듦 */
+        #search-results::-webkit-scrollbar { width: 14px; }
+        #search-results::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        #search-results::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; border: 2px solid #f1f5f9; }
 
-        /* 아이템 여백을 줄여서 더 많이 보이게 압축 */
         .result-item { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; text-align: left; transition: background 0.2s; }
         .result-item:last-child { border-bottom: none; }
         .result-item:hover { background: #f0f9ff; }
@@ -149,7 +148,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V3.3</span>
+        <span>(주)METRO R&S 현장관리 시스템 V3.4</span>
     </div>
 </header>
 
@@ -166,8 +165,10 @@
         <div class="grid">
             <input type="date" id="today-date" class="full">
             <select id="db-sheet" onchange="clearInputs()" class="full"><option value="">현장을 먼저 선택해주세요</option></select>
-            <input type="text" id="dong" placeholder="동 (예: 101)" oninput="search()">
-            <input type="text" id="ho" placeholder="호 (예: 201)" oninput="search()">
+            
+            <input type="text" id="dong" placeholder="동" oninput="search()">
+            <input type="text" id="ho" placeholder="호" oninput="search()">
+            
             <div id="search-results"></div>
             <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
             <input type="text" id="loc" placeholder="위치">
@@ -266,7 +267,6 @@
         if(!sheet || !d || !h) { res.style.display='none'; return; }
         const matches = (cloudDB[sheet] || []).filter(v => String(v.dong)===d && String(v.ho)===h);
         if(matches.length>0) {
-            // 💡 핵심 추가: 스크롤이 내려가도 최상단에 붙어있는 '닫기' 버튼 영역 생성
             let htmlStr = `<div style="position:sticky; top:0; background:#f0f9ff; padding:10px 14px; font-weight:800; font-size:13px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
                 <span>🔍 일치하는 내역 ${matches.length}건</span>
                 <span onclick="document.getElementById('search-results').style.display='none'" style="background:#e0f2fe; padding:4px 10px; border-radius:6px; cursor:pointer; color:#0ea5e9;">닫기 ✕</span>
