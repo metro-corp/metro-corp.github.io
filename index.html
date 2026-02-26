@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V3.1</title>
+    <title>(주)METRO R&S 현장관리 시스템 V3.2</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -67,7 +67,6 @@
         #site-select { font-weight: 700; color: var(--accent-hover); background-color: #f0f9ff; border-color: #bae6fd; font-size: 16px; }
         #db-sheet { font-weight: 700; color: var(--success); background-color: #ecfdf5; border-color: #a7f3d0; }
 
-        /* 💡 수정됨: 목록 잘림 해결을 위해 max-height를 대폭(400px) 키우고 하단 여백 추가 */
         #search-results { 
             display: none; background: #fff; border: 1px solid var(--border-light); border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: var(--shadow-hover); 
             max-height: 400px; overflow-y: auto; overflow-x: hidden; padding-bottom: 10px;
@@ -103,7 +102,6 @@
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-        /* 💡 핵심: 꼼수 없이 정직하게 도화지를 중앙에 배치하여 브라우저가 무조건 렌더링하게 만듦 */
         #pdf-template { 
             display: none; 
             width: 794px; 
@@ -115,7 +113,6 @@
             margin: 0 auto; 
         }
 
-        /* 💡 전송 알림 뱃지 추가 */
         #generating-badge {
             display: none; 
             position: fixed; 
@@ -141,7 +138,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V3.1</span>
+        <span>(주)METRO R&S 현장관리 시스템 V3.2</span>
     </div>
 </header>
 
@@ -218,7 +215,6 @@
 </div>
 
 <script>
-    // 💡 대표님 진짜 서버 주소 확인 완료!
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyE1jMEzrix8xYu3_lgHUX8Oqm6TAtWP6RDZzZ2WFL9c6Crlz5BFTO7__JoFygqRwUD/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -401,7 +397,6 @@
         btn.style.pointerEvents = "none"; 
         btn.style.opacity = "0.8";
         
-        // 💡 1단계: 기존 화면을 싹 숨겨서 백지 원천 차단!
         document.querySelector('.container').style.display = 'none';
         document.querySelector('header').style.display = 'none';
         document.getElementById('generating-badge').style.display = 'block';
@@ -413,11 +408,9 @@
             document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
             document.getElementById('pdf-p1').src = d.p1 || ""; document.getElementById('pdf-p2').src = d.p2 || "";
             
-            // 💡 2단계: PDF 도화지를 눈에 띄게 정중앙에 띄움
             const el = document.getElementById('pdf-template'); 
             el.style.display = 'block'; 
             
-            // 스마트폰이 그림을 완벽히 그릴 수 있도록 0.6초 대기 후 캡처
             setTimeout(async () => {
                 try {
                     const pdf = await html2pdf().set({ 
@@ -426,15 +419,14 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     }).from(el).output('datauristring');
                     
-                    // 캡처가 끝나면 도화지는 지우고 구글 드라이브로 발사
                     el.style.display = 'none'; 
-                    document.getElementById('generating-badge').innerText = "🚀 구글 드라이브 저장 중...";
+                    // 💡 요청하신 "서버에 전송 중입니다..." 문구 적용!
+                    document.getElementById('generating-badge').innerText = "🚀 서버에 전송 중입니다...";
 
                     const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: (d.p1||"").split(',')[1]||"", p2Base64: (d.p2||"").split(',')[1]||"", p3Base64: (d.p3||"").split(',')[1]||"" };
                     const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
                     const j = await r.json();
                     
-                    // 💡 3단계: 모든 것이 성공하면 원래 화면으로 원상복구!
                     document.querySelector('.container').style.display = 'block';
                     document.querySelector('header').style.display = 'block';
                     document.getElementById('generating-badge').style.display = 'none';
@@ -459,7 +451,7 @@
                     alert("❌ PDF 캡처 중 오류가 발생했습니다."); 
                     btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
                 }
-            }, 600); // 0.6초 렌더링 보장
+            }, 600); 
 
         } catch(e) { 
             document.querySelector('.container').style.display = 'block';
