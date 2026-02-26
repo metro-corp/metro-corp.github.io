@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V2.3</title>
+    <title>(주)METRO R&S 현장관리 시스템 V2.5</title>
     
     <meta property="og:title" content="(주)METRO R&S 현장관리 시스템">
     <meta property="og:description" content="현장 사진 촬영부터 PDF 보고서 자동 생성, 구글 드라이브 분류까지 한 번에 처리하는 통합 솔루션">
@@ -88,7 +88,7 @@
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-        #pdf-template { display: none; width: 794px; height: 1122px; padding: 40px; background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; overflow: hidden; }
+        #pdf-template { display: none; position: absolute; top: 0; left: -9999px; width: 794px; height: 1122px; padding: 40px; background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -96,7 +96,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V2.3</span>
+        <span>(주)METRO R&S 현장관리 시스템 V2.5</span>
     </div>
 </header>
 
@@ -173,7 +173,6 @@
 </div>
 
 <script>
-    // 🚨 주의: 아래 주소는 대표님의 구글 스크립트 웹앱 주소여야 합니다.
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyfvRyEKhbbH9s6F7p9YT7BaUSwNkkJaLzydpte09vCCvCz7nfBUN6zyFUwMFBppVLA/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -203,7 +202,6 @@
             if(j.result==='success') {
                 cloudDB = j.data; d.innerHTML = '<option value="">📑 공종을 선택하세요</option>';
                 Object.keys(cloudDB).forEach(n => {
-                    // 💡 핵심 추가: '작업기록'이라는 이름의 시트는 공종 목록에 뜨지 않도록 숨깁니다.
                     if (n !== "작업기록") {
                         d.innerHTML += `<option value="${n}">${n}</option>`;
                     }
@@ -336,6 +334,22 @@
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; 
     }
 
+    // 완전히 다른 현장으로 바꿀 때 모든 입력창을 초기화하는 함수
+    function clearInputs() { 
+        ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
+        [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
+        editingIndex = -1; 
+        document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
+    }
+
+    // 💡 핵심: 전송 완료 후에는 '현장(자동유지)'과 '공종(work)'만 놔두고 나머지 데이터만 싹 지웁니다.
+    function resetAfterSend() {
+        ['dong','ho','loc','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
+        [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
+        editingIndex = -1; 
+        document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
+    }
+
     function delLocal(i) { 
         savedList.splice(i, 1); 
         if (editingIndex === i) clearInputs(); 
@@ -350,9 +364,6 @@
         btn.innerHTML = "⏳ 전송 중입니다..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
         
         try {
-            const currentScroll = window.scrollY;
-            window.scrollTo(0, 0);
-
             document.getElementById('pdf-date').innerText = d.date; document.getElementById('pdf-contractor').innerText = d.contractor;
             document.getElementById('pdf-site').innerText = d.site; document.getElementById('pdf-unit').innerText = `${d.dong}동 ${d.ho}호`;
             document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
@@ -367,7 +378,6 @@
             }).from(el).output('datauristring');
             
             el.style.display = 'none';
-            window.scrollTo(0, currentScroll); 
 
             const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: (d.p1||"").split(',')[1]||"", p2Base64: (d.p2||"").split(',')[1]||"", p3Base64: (d.p3||"").split(',')[1]||"" };
             const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -376,7 +386,10 @@
             if(j.result==='success') { 
                 alert("🎉 성공적으로 전송되었습니다!"); 
                 if (editingIndex > -1) { savedList.splice(editingIndex, 1); updateTable(); }
-                clearInputs(); 
+                
+                // 💡 완료 후 현장과 공종만 남기고 리셋
+                resetAfterSend(); 
+                
                 btn.innerHTML = "🚀 최종 전송"; 
                 btn.style.pointerEvents = "auto"; 
                 btn.style.opacity = "1"; 
@@ -387,13 +400,6 @@
             btn.style.opacity = "1"; 
             btn.innerHTML = "🚀 최종 전송"; 
         }
-    }
-    
-    function clearInputs() { 
-        ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
-        [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
-        editingIndex = -1; 
-        document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
     }
 </script>
 </body>
