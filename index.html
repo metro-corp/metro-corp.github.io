@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V2.6</title>
+    <title>(주)METRO R&S 현장관리 시스템 V2.7</title>
     
     <script>
-        // 💡 핵심: 카카오톡에서 링크를 열었을 경우, 자동으로 기본 브라우저(크롬/삼성인터넷 등)로 튕겨내버립니다!
         var userAgent = navigator.userAgent.toLowerCase();
         if (userAgent.indexOf("kakaotalk") !== -1) {
             location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
-            // 혹시 자동 이동이 안 되는 기종(아이폰 일부)을 위한 안내창
             setTimeout(function() {
                 alert("🚨 카카오톡에서는 현장 시스템이 정상 작동하지 않습니다.\n\n우측 하단(또는 상단)의 [점 3개(설정)] 버튼을 눌러\n반드시 [다른 브라우저로 열기]를 선택해 주세요!");
             }, 1000);
@@ -100,7 +98,21 @@
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-        #pdf-template { display: none; position: absolute; top: 0; left: -9999px; width: 794px; height: 1122px; padding: 40px; background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; overflow: hidden; }
+        /* 💡 핵심 변경: left를 0으로 되돌리되, z-index를 -9999로 주어 화면 최하단으로 깔아버립니다 (백지 오류 완벽 수정) */
+        #pdf-template { 
+            display: none; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: -9999; 
+            width: 794px; 
+            height: 1122px; 
+            padding: 40px; 
+            background: white; 
+            font-family: 'Malgun Gothic', sans-serif; 
+            box-sizing: border-box; 
+            overflow: hidden; 
+        }
     </style>
 </head>
 <body>
@@ -108,7 +120,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V2.6</span>
+        <span>(주)METRO R&S 현장관리 시스템 V2.7</span>
     </div>
 </header>
 
@@ -185,6 +197,7 @@
 </div>
 
 <script>
+    // 🚨 반드시 대표님의 Apps Script 웹앱 URL이 맞는지 확인하세요!
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyfvRyEKhbbH9s6F7p9YT7BaUSwNkkJaLzydpte09vCCvCz7nfBUN6zyFUwMFBppVLA/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -214,6 +227,7 @@
             if(j.result==='success') {
                 cloudDB = j.data; d.innerHTML = '<option value="">📑 공종을 선택하세요</option>';
                 Object.keys(cloudDB).forEach(n => {
+                    // '작업기록' 시트는 공종 목록에 뜨지 않도록 숨깁니다.
                     if (n !== "작업기록") {
                         d.innerHTML += `<option value="${n}">${n}</option>`;
                     }
@@ -379,7 +393,8 @@
             document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
             document.getElementById('pdf-p1').src = d.p1 || ""; document.getElementById('pdf-p2').src = d.p2 || "";
             
-            const el = document.getElementById('pdf-template'); el.style.display = 'block';
+            const el = document.getElementById('pdf-template'); 
+            el.style.display = 'block'; // 화면 최하단(z-index:-9999)에 살짝 띄웁니다.
             
             const pdf = await html2pdf().set({ 
                 margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
