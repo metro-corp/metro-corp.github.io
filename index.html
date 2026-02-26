@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V2.9</title>
+    <title>(주)METRO R&S 현장관리 시스템 V3.0</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
         if (userAgent.indexOf("kakaotalk") !== -1) {
             location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
             setTimeout(function() {
-                alert("🚨 카카오톡에서는 현장 시스템이 정상 작동하지 않습니다.\n\n우측 하단의 [점 3개(설정)] 버튼을 눌러\n반드시 [다른 브라우저로 열기]를 선택해 주세요!");
+                alert("🚨 카카오톡에서는 현장 시스템이 정상 작동하지 않습니다.\n\n우측 하단(또는 상단)의 [점 3개(설정)] 버튼을 눌러\n반드시 [다른 브라우저로 열기]를 선택해 주세요!");
             }, 1000);
         }
     </script>
@@ -67,7 +67,12 @@
         #site-select { font-weight: 700; color: var(--accent-hover); background-color: #f0f9ff; border-color: #bae6fd; font-size: 16px; }
         #db-sheet { font-weight: 700; color: var(--success); background-color: #ecfdf5; border-color: #a7f3d0; }
 
-        #search-results { display: none; background: #fff; border: 1px solid var(--border-light); border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: var(--shadow-hover); max-height: 250px; overflow-y: auto; overflow-x: hidden; }
+        /* 💡 수정됨: 목록 잘림 해결을 위해 높이(max-height)를 키우고, 아래쪽 여백(padding) 추가 */
+        #search-results { 
+            display: none; background: #fff; border: 1px solid var(--border-light); border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: var(--shadow-hover); 
+            max-height: 350px; overflow-y: auto; overflow-x: hidden; padding-bottom: 10px; 
+            -webkit-overflow-scrolling: touch; /* 모바일 부드러운 스크롤 */
+        }
         .result-item { padding: 14px 16px; border-bottom: 1px solid var(--border-light); cursor: pointer; text-align: left; transition: background 0.2s; }
         .result-item:hover { background: #f8fafc; }
         .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; color: var(--text-sub); font-size: 13px; margin-top: 4px; }
@@ -98,30 +103,28 @@
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-        /* 💡 수정됨: PDF를 화면 최상단(top:0, left:0)에 두되, z-index를 9998로 하여 로딩스크린 바로 밑에 둡니다. 백지가 되지 않습니다! */
+        /* 💡 수정됨: PDF를 화면의 맨 위(top:0)에 두어 백지 오류를 원천 차단 */
         #pdf-template { 
             display: none; 
             position: absolute; 
             top: 0; 
             left: 0; 
-            z-index: 9998; 
+            z-index: 9998; /* 로딩창 바로 아래 위치 */
             width: 794px; 
             height: 1122px; 
             padding: 40px; 
             background: white; 
             font-family: 'Malgun Gothic', sans-serif; 
             box-sizing: border-box; 
-            overflow: hidden; 
         }
 
-        /* 💡 로딩 화면 디자인 추가 */
         #loading-overlay {
             display: none; 
             position: fixed; 
             top: 0; left: 0; 
             width: 100%; height: 100%; 
             background: rgba(255, 255, 255, 0.95); 
-            z-index: 9999; /* PDF보다 1 높아서 PDF를 완벽히 가림 */
+            z-index: 9999; /* 화면의 모든 것을 가림 (PDF 도화지 포함) */
             flex-direction: column; 
             justify-content: center; 
             align-items: center; 
@@ -143,7 +146,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V2.9</span>
+        <span>(주)METRO R&S 현장관리 시스템 V3.0</span>
     </div>
 </header>
 
@@ -220,6 +223,7 @@
 </div>
 
 <script>
+    // 💡 대표님이 제공해주신 독립 서버 주소입니다.
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyE1jMEzrix8xYu3_lgHUX8Oqm6TAtWP6RDZzZ2WFL9c6Crlz5BFTO7__JoFygqRwUD/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -398,9 +402,13 @@
         const d = getD();
         if(!currentSid || !d.dong || !d.ho) return alert("현장 및 정보를 확인하세요.");
         
-        // 💡 핵심 1: 전송 버튼을 누르면 화면 전체를 가리는 로딩창을 띄웁니다.
+        // 💡 1. 로딩창을 띄워 사용자의 터치와 시야를 완벽히 가립니다.
         const overlay = document.getElementById('loading-overlay');
         overlay.style.display = 'flex';
+        
+        // 💡 2. 로딩창 뒤에서 화면 스크롤을 맨 위로 올려버립니다. (PDF 백지 오류 해결의 핵심)
+        const currentScroll = window.scrollY;
+        window.scrollTo(0, 0);
         
         try {
             document.getElementById('pdf-date').innerText = d.date; document.getElementById('pdf-contractor').innerText = d.contractor;
@@ -408,26 +416,26 @@
             document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
             document.getElementById('pdf-p1').src = d.p1 || ""; document.getElementById('pdf-p2').src = d.p2 || "";
             
-            // 💡 핵심 2: PDF 도화지를 숨기지 않고 화면 맨 위에 정상적으로 띄웁니다. (대신 로딩창이 그 위를 덮어서 가려줍니다)
             const el = document.getElementById('pdf-template'); 
             el.style.display = 'block'; 
             
-            // 화면 렌더링을 위해 아주 잠깐(0.1초) 기다린 후 캡처 시작
+            // 💡 3. 도화지가 브라우저에 선명하게 그려질 수 있도록 0.3초(300ms) 여유를 줍니다.
             setTimeout(async () => {
                 try {
                     const pdf = await html2pdf().set({ 
-                        margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
+                        margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 1.0 },
                         html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 }, 
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                     }).from(el).output('datauristring');
                     
-                    el.style.display = 'none'; // 캡처가 끝나면 다시 숨김
+                    el.style.display = 'none'; // 캡처 완료 후 도화지 숨김
+                    window.scrollTo(0, currentScroll); // 원래 스크롤 위치로 자연스럽게 복귀
 
                     const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: (d.p1||"").split(',')[1]||"", p2Base64: (d.p2||"").split(',')[1]||"", p3Base64: (d.p3||"").split(',')[1]||"" };
                     const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
                     const j = await r.json();
                     
-                    overlay.style.display = 'none'; // 전송 완료 후 로딩창 제거
+                    overlay.style.display = 'none'; // 서버 통신까지 완료되면 로딩창 제거
                     
                     if(j.result==='success') { 
                         alert("🎉 성공적으로 전송되었습니다!"); 
@@ -439,12 +447,14 @@
                 } catch(e) {
                     overlay.style.display = 'none';
                     el.style.display = 'none';
+                    window.scrollTo(0, currentScroll);
                     alert("❌ PDF 캡처 중 오류가 발생했습니다."); 
                 }
-            }, 100);
+            }, 300);
 
         } catch(e) { 
             overlay.style.display = 'none';
+            window.scrollTo(0, currentScroll);
             alert("❌ 전송 준비 중 오류가 발생했습니다."); 
         }
     }
