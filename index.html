@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V2.8</title>
+    <title>(주)METRO R&S 현장관리 시스템 V2.9</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
         if (userAgent.indexOf("kakaotalk") !== -1) {
             location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
             setTimeout(function() {
-                alert("🚨 카카오톡에서는 현장 시스템이 정상 작동하지 않습니다.\n\n우측 하단(또는 상단)의 [점 3개(설정)] 버튼을 눌러\n반드시 [다른 브라우저로 열기]를 선택해 주세요!");
+                alert("🚨 카카오톡에서는 현장 시스템이 정상 작동하지 않습니다.\n\n우측 하단의 [점 3개(설정)] 버튼을 눌러\n반드시 [다른 브라우저로 열기]를 선택해 주세요!");
             }, 1000);
         }
     </script>
@@ -98,15 +98,52 @@
         .action-btn.del { background: #fee2e2; color: var(--danger); }
         .action-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-        #pdf-template { display: none; position: absolute; top: 0; left: 0; z-index: -9999; width: 794px; height: 1122px; padding: 40px; background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; overflow: hidden; }
+        /* 💡 수정됨: PDF를 화면 최상단(top:0, left:0)에 두되, z-index를 9998로 하여 로딩스크린 바로 밑에 둡니다. 백지가 되지 않습니다! */
+        #pdf-template { 
+            display: none; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 9998; 
+            width: 794px; 
+            height: 1122px; 
+            padding: 40px; 
+            background: white; 
+            font-family: 'Malgun Gothic', sans-serif; 
+            box-sizing: border-box; 
+            overflow: hidden; 
+        }
+
+        /* 💡 로딩 화면 디자인 추가 */
+        #loading-overlay {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(255, 255, 255, 0.95); 
+            z-index: 9999; /* PDF보다 1 높아서 PDF를 완벽히 가림 */
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            color: var(--primary-dark); 
+            font-weight: 800; 
+            font-size: 18px; 
+        }
+        @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: scale(0.9); } }
+        .loader-icon { font-size: 50px; margin-bottom: 15px; animation: pulse 1.5s infinite; }
     </style>
 </head>
 <body>
 
+<div id="loading-overlay">
+    <div class="loader-icon">🚀</div>
+    <div id="loading-text">PDF 생성 및 전송 중...</div>
+</div>
+
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V2.8</span>
+        <span>(주)METRO R&S 현장관리 시스템 V2.9</span>
     </div>
 </header>
 
@@ -183,7 +220,6 @@
 </div>
 
 <script>
-    // 💡 대표님께서 방금 알려주신 '진짜 독립 서버'의 웹앱 주소로 완벽하게 교체되었습니다!
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyE1jMEzrix8xYu3_lgHUX8Oqm6TAtWP6RDZzZ2WFL9c6Crlz5BFTO7__JoFygqRwUD/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -213,9 +249,7 @@
             if(j.result==='success') {
                 cloudDB = j.data; d.innerHTML = '<option value="">📑 공종을 선택하세요</option>';
                 Object.keys(cloudDB).forEach(n => {
-                    if (n !== "작업기록") {
-                        d.innerHTML += `<option value="${n}">${n}</option>`;
-                    }
+                    if (n !== "작업기록") { d.innerHTML += `<option value="${n}">${n}</option>`; }
                 });
             } else { throw new Error(j.message); }
         } catch(e) { d.innerHTML = '<option value="">❌ 데이터 로드 실패</option>'; }
@@ -274,14 +308,9 @@
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const bw = w * 0.45; const bh = h * 0.25; const x = 0, y = h - bh; 
-        
-        ctx.fillStyle = "white"; 
-        ctx.fillRect(x, y, bw, bh);
-
+        ctx.fillStyle = "white"; ctx.fillRect(x, y, bw, bh);
         ctx.lineWidth = 1; ctx.strokeStyle = "black"; ctx.strokeRect(x, y, bw, bh); 
-        
         const rows = 5; const rowH = bh / rows; const colW = bw * 0.25; 
-        
         ctx.font = `${Math.floor(rowH * 0.5)}px sans-serif`; ctx.fillStyle = "black"; ctx.textBaseline = "middle";
         
         const d = getD(); 
@@ -340,7 +369,6 @@
             if (imgSrc && imgSrc.length > 100) { imgEl.src = imgSrc; imgEl.style.display = 'block'; textEl.style.display = 'none'; } 
             else { imgEl.src = ''; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
         });
-
         editingIndex = i; 
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; 
     }
@@ -367,10 +395,12 @@
     }
 
     async function send() {
-        const btn = document.getElementById('btn-send'); const d = getD();
+        const d = getD();
         if(!currentSid || !d.dong || !d.ho) return alert("현장 및 정보를 확인하세요.");
         
-        btn.innerHTML = "⏳ 전송 중입니다..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
+        // 💡 핵심 1: 전송 버튼을 누르면 화면 전체를 가리는 로딩창을 띄웁니다.
+        const overlay = document.getElementById('loading-overlay');
+        overlay.style.display = 'flex';
         
         try {
             document.getElementById('pdf-date').innerText = d.date; document.getElementById('pdf-contractor').innerText = d.contractor;
@@ -378,36 +408,44 @@
             document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
             document.getElementById('pdf-p1').src = d.p1 || ""; document.getElementById('pdf-p2').src = d.p2 || "";
             
+            // 💡 핵심 2: PDF 도화지를 숨기지 않고 화면 맨 위에 정상적으로 띄웁니다. (대신 로딩창이 그 위를 덮어서 가려줍니다)
             const el = document.getElementById('pdf-template'); 
             el.style.display = 'block'; 
             
-            const pdf = await html2pdf().set({ 
-                margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-            }).from(el).output('datauristring');
-            
-            el.style.display = 'none';
+            // 화면 렌더링을 위해 아주 잠깐(0.1초) 기다린 후 캡처 시작
+            setTimeout(async () => {
+                try {
+                    const pdf = await html2pdf().set({ 
+                        margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 }, 
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+                    }).from(el).output('datauristring');
+                    
+                    el.style.display = 'none'; // 캡처가 끝나면 다시 숨김
 
-            const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: (d.p1||"").split(',')[1]||"", p2Base64: (d.p2||"").split(',')[1]||"", p3Base64: (d.p3||"").split(',')[1]||"" };
-            const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const j = await r.json();
-            
-            if(j.result==='success') { 
-                alert("🎉 성공적으로 전송되었습니다!"); 
-                if (editingIndex > -1) { savedList.splice(editingIndex, 1); updateTable(); }
-                
-                resetAfterSend(); 
-                
-                btn.innerHTML = "🚀 최종 전송"; 
-                btn.style.pointerEvents = "auto"; 
-                btn.style.opacity = "1"; 
-            }
+                    const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: (d.p1||"").split(',')[1]||"", p2Base64: (d.p2||"").split(',')[1]||"", p3Base64: (d.p3||"").split(',')[1]||"" };
+                    const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                    const j = await r.json();
+                    
+                    overlay.style.display = 'none'; // 전송 완료 후 로딩창 제거
+                    
+                    if(j.result==='success') { 
+                        alert("🎉 성공적으로 전송되었습니다!"); 
+                        if (editingIndex > -1) { savedList.splice(editingIndex, 1); updateTable(); }
+                        resetAfterSend(); 
+                    } else {
+                        alert("❌ 서버 오류: " + j.message);
+                    }
+                } catch(e) {
+                    overlay.style.display = 'none';
+                    el.style.display = 'none';
+                    alert("❌ PDF 캡처 중 오류가 발생했습니다."); 
+                }
+            }, 100);
+
         } catch(e) { 
-            alert("❌ 전송에 실패했습니다. 네트워크 상태를 확인해주세요."); 
-            btn.style.pointerEvents = "auto"; 
-            btn.style.opacity = "1"; 
-            btn.innerHTML = "🚀 최종 전송"; 
+            overlay.style.display = 'none';
+            alert("❌ 전송 준비 중 오류가 발생했습니다."); 
         }
     }
 </script>
