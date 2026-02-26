@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V3.6</title>
+    <title>(주)METRO R&S 현장관리 시스템 V3.7</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -140,7 +140,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V3.6</span>
+        <span>(주)METRO R&S 현장관리 시스템 V3.7</span>
     </div>
 </header>
 
@@ -405,8 +405,11 @@
         updateTable(); 
     }
 
+    // 💡 깔끔하게 정리된 비동기(async/await) 전송 함수
     async function send() {
-        const btn = document.getElementById('btn-send'); const d = getD();
+        const btn = document.getElementById('btn-send'); 
+        const d = getD();
+        
         if(!currentSid || !d.dong || !d.ho) return alert("현장 및 정보를 확인하세요.");
         
         btn.innerHTML = "⏳ 준비 중..."; 
@@ -419,60 +422,73 @@
         window.scrollTo(0, 0);
 
         try {
-            document.getElementById('pdf-date').innerText = d.date; document.getElementById('pdf-contractor').innerText = d.contractor;
-            document.getElementById('pdf-site').innerText = d.site; document.getElementById('pdf-unit').innerText = `${d.dong}동 ${d.ho}호`;
-            document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
-            document.getElementById('pdf-p1').src = d.p1 || ""; document.getElementById('pdf-p2').src = d.p2 || "";
+            // 💡 핵심: 전/후 사진이 하나라도 있는지 검사합니다.
+            let hasPhotos = (d.p1 && d.p1.length > 100) || (d.p2 && d.p2.length > 100);
+            let pdfBase64Data = "";
+
+            // 사진이 있을 때만 PDF 생성 작업을 진행합니다!
+            if (hasPhotos) {
+                document.getElementById('generating-badge').innerText = "⏳ 문서 생성 중...";
+                document.getElementById('pdf-date').innerText = d.date; document.getElementById('pdf-contractor').innerText = d.contractor;
+                document.getElementById('pdf-site').innerText = d.site; document.getElementById('pdf-unit').innerText = `${d.dong}동 ${d.ho}호`;
+                document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
+                document.getElementById('pdf-p1').src = d.p1 || ""; document.getElementById('pdf-p2').src = d.p2 || "";
+                
+                const el = document.getElementById('pdf-template'); 
+                el.style.display = 'block'; 
+                
+                // 도화지가 화면에 렌더링될 시간 0.6초 대기
+                await new Promise(resolve => setTimeout(resolve, 600)); 
+
+                const pdf = await html2pdf().set({ 
+                    margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 }, 
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+                }).from(el).output('datauristring');
+                
+                el.style.display = 'none'; 
+                pdfBase64Data = pdf.split(',')[1];
+            } else {
+                // 사진이 없으면 빠른 처리를 위해 대기 시간을 확 줄입니다.
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            document.getElementById('generating-badge').innerText = "🚀 서버에 전송 중입니다...";
+
+            // 사진이 없으면 pdfBase64Data는 ""(빈칸)으로 전송되며, 서버는 빈칸을 확인하고 PDF를 만들지 않습니다.
+            const payload = { 
+                targetSheetId: currentSid, record: d, 
+                pdfBase64: pdfBase64Data, 
+                p1Base64: (d.p1||"").split(',')[1]||"", 
+                p2Base64: (d.p2||"").split(',')[1]||"", 
+                p3Base64: (d.p3||"").split(',')[1]||"" 
+            };
             
-            const el = document.getElementById('pdf-template'); 
-            el.style.display = 'block'; 
+            const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const j = await r.json();
             
-            setTimeout(async () => {
-                try {
-                    const pdf = await html2pdf().set({ 
-                        margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 }, 
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-                    }).from(el).output('datauristring');
-                    
-                    el.style.display = 'none'; 
-                    document.getElementById('generating-badge').innerText = "🚀 서버에 전송 중입니다...";
-
-                    const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: (d.p1||"").split(',')[1]||"", p2Base64: (d.p2||"").split(',')[1]||"", p3Base64: (d.p3||"").split(',')[1]||"" };
-                    const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-                    const j = await r.json();
-                    
-                    document.querySelector('.container').style.display = 'block';
-                    document.querySelector('header').style.display = 'block';
-                    document.getElementById('generating-badge').style.display = 'none';
-                    document.getElementById('generating-badge').innerText = "⏳ 문서 생성 및 전송 중...";
-
-                    if(j.result==='success') { 
-                        alert("🎉 성공적으로 전송되었습니다!"); 
-                        if (editingIndex > -1) { savedList.splice(editingIndex, 1); updateTable(); }
-                        resetAfterSend(); 
-                        btn.innerHTML = "🚀 최종 전송"; 
-                        btn.style.pointerEvents = "auto"; 
-                        btn.style.opacity = "1"; 
-                    } else {
-                        alert("❌ 서버 오류: " + j.message);
-                        btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
-                    }
-                } catch(e) {
-                    document.querySelector('.container').style.display = 'block';
-                    document.querySelector('header').style.display = 'block';
-                    document.getElementById('generating-badge').style.display = 'none';
-                    el.style.display = 'none';
-                    alert("❌ PDF 캡처 중 오류가 발생했습니다."); 
-                    btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
-                }
-            }, 600); 
-
-        } catch(e) { 
             document.querySelector('.container').style.display = 'block';
             document.querySelector('header').style.display = 'block';
             document.getElementById('generating-badge').style.display = 'none';
-            alert("❌ 전송 준비 중 오류가 발생했습니다."); 
+            document.getElementById('generating-badge').innerText = "⏳ 문서 생성 및 전송 중...";
+
+            if(j.result==='success') { 
+                alert("🎉 성공적으로 전송되었습니다!"); 
+                if (editingIndex > -1) { savedList.splice(editingIndex, 1); updateTable(); }
+                resetAfterSend(); 
+                btn.innerHTML = "🚀 최종 전송"; 
+                btn.style.pointerEvents = "auto"; 
+                btn.style.opacity = "1"; 
+            } else {
+                alert("❌ 서버 오류: " + j.message);
+                btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
+            }
+        } catch(e) {
+            document.querySelector('.container').style.display = 'block';
+            document.querySelector('header').style.display = 'block';
+            document.getElementById('generating-badge').style.display = 'none';
+            document.getElementById('pdf-template').style.display = 'none';
+            alert("❌ 처리 중 오류가 발생했습니다."); 
             btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
         }
     }
