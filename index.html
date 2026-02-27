@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V3.8</title>
+    <title>(주)METRO R&S 현장관리 시스템 V4.1</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -48,10 +48,12 @@
         #site-select { font-weight: 700; color: var(--accent-hover); background-color: #f0f9ff; border-color: #bae6fd; font-size: 16px; }
         #db-sheet { font-weight: 700; color: var(--success); background-color: #ecfdf5; border-color: #a7f3d0; }
 
-        #search-results { display: none; background: #fff; border: 2px solid #bae6fd; border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2); max-height: 400px; overflow-y: auto; overflow-x: hidden; padding-bottom: 10px; -webkit-overflow-scrolling: touch; position: relative; }
-        #search-results::-webkit-scrollbar { width: 14px; }
-        #search-results::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-        #search-results::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; border: 2px solid #f1f5f9; }
+        /* 💡 실수 교정: 스크롤 관련 속성(max-height, overflow-y 등)을 완전히 삭제하여 내용물만큼 무한히 늘어나게 복구했습니다. */
+        #search-results { 
+            display: none; background: #fff; border: 2px solid #bae6fd; border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2); 
+            position: relative; overflow: hidden; padding-bottom: 10px;
+        }
+        
         .result-item { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; text-align: left; transition: background 0.2s; }
         .result-item:hover { background: #f0f9ff; }
         .result-item strong { display: block; font-size: 15px; color: var(--primary-dark); margin-bottom: 6px; }
@@ -89,7 +91,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V3.8</span>
+        <span>(주)METRO R&S 현장관리 시스템 V4.1</span>
     </div>
 </header>
 
@@ -172,19 +174,16 @@
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
     let editingIndex = -1; 
-    let isProcessingImage = false; // 💡 아이폰 사진 증발 방지용 잠금 장치
+    let isProcessingImage = false; 
 
-    // 💡 1. 자동 복구(Auto-Save) 기능: 다른 앱 갔다와도 내용 복구
     window.onload = async () => { 
         document.getElementById('today-date').value = new Date().toISOString().substring(0, 10);
         
-        // 브라우저에 저장된 임시목록 불러오기
         let list = localStorage.getItem('metro_savedList');
         if(list) { savedList = JSON.parse(list); updateTable(); }
 
         await getSites();
 
-        // 브라우저에 저장된 '현재 작성 중이던 내용' 불러오기
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
             let d = JSON.parse(auto);
@@ -208,7 +207,6 @@
             }
         }
 
-        // 입력할 때마다 실시간으로 브라우저에 저장
         document.querySelectorAll('input, select, textarea').forEach(el => {
             el.addEventListener('input', autoSave);
             el.addEventListener('change', autoSave);
@@ -277,7 +275,6 @@
 
     function proc(input, pId, tId) {
         if(input.files && input.files[0]) {
-            // 💡 2. 아이폰 사진 증발 방지: 캔버스 작업 중에는 저장을 막고 '처리중' 표시
             isProcessingImage = true; 
             const txt = document.getElementById(tId);
             const originalLabel = pId === 'p1' ? '작업 전' : (pId === 'p2' ? '작업 후' : '완료확인서');
@@ -295,7 +292,6 @@
                         if(w > h) { if(w > max) { h *= max/w; w = max; } } 
                         else { if(h > max) { w *= max/h; h = max; } }
                         c.width = w; c.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        // 💡 저장 용량 확보를 위해 0.6 품질로 최적화 (화질은 충분히 유지됨)
                         document.getElementById(pId).src = c.toDataURL('image/jpeg', 0.6); 
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
@@ -309,8 +305,8 @@
                     txt.style.display='none';
                     txt.innerHTML = `<div style="font-size: 24px;">${pId==='p3'?'📋':'📷'}</div><span>${originalLabel}</span>`;
                     
-                    isProcessingImage = false; // 잠금 해제
-                    autoSave(); // 사진까지 안전하게 자동저장 완료
+                    isProcessingImage = false; 
+                    autoSave(); 
                 };
                 img.src = e.target.result;
             };
@@ -333,7 +329,7 @@
             ctx.fillText(lbls[i], x + 10, curY + (rowH / 2)); ctx.fillText(vls[i], x + colW + 10, curY + (rowH / 2));    
         }
         ctx.beginPath(); ctx.moveTo(x + colW, y); ctx.lineTo(x + colW, y + bh); ctx.stroke();
-        return c.toDataURL('image/jpeg', 0.6); // 최적화
+        return c.toDataURL('image/jpeg', 0.6); 
     }
 
     function getD() { 
@@ -353,7 +349,7 @@
             updateTable(); clearInputs(true);
         } catch(e) {
             alert("❌ 스마트폰 저장 공간이 가득 찼습니다.\n전송이 완료된 임시 목록을 먼저 삭제해 주세요!");
-            if(editingIndex === -1) savedList.pop(); // 에러 시 복구
+            if(editingIndex === -1) savedList.pop(); 
         }
     }
 
@@ -384,7 +380,7 @@
         });
         editingIndex = i; 
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; 
-        autoSave(); // 불러온 내용도 즉시 안전하게 저장
+        autoSave(); 
     }
 
     function clearInputs(isFullClear) { 
@@ -392,7 +388,7 @@
         [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
         editingIndex = -1; 
         document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
-        if(isFullClear) localStorage.removeItem('metro_autoSave'); // 완전히 비울 때만 캐시 삭제
+        if(isFullClear) localStorage.removeItem('metro_autoSave'); 
     }
 
     function resetAfterSend() {
@@ -400,7 +396,7 @@
         [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
         editingIndex = -1; 
         document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
-        autoSave(); // 부분 지워진 상태로 갱신
+        autoSave(); 
     }
 
     function delLocal(i) { 
