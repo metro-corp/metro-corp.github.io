@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V4.1</title>
+    <title>(주)METRO R&S 현장관리 시스템 V4.2</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -17,7 +17,7 @@
     </script>
 
     <meta property="og:title" content="(주)METRO R&S 현장관리 시스템">
-    <meta property="og:description" content="현장 사진 촬영부터 PDF 보고서 자동 생성, 구글 드라이브 분류까지 한 번에 처리하는 통합 솔루션">
+    <meta property="og:description" content="현장 사진 촬영부터 PDF 사진대지 자동 생성, 구글 드라이브 분류까지 한 번에 처리하는 통합 솔루션">
     <meta property="og:image" content="https://metro-corp.github.io/og-image.png">
     
     <link rel="apple-touch-icon" href="logo.png">
@@ -48,12 +48,7 @@
         #site-select { font-weight: 700; color: var(--accent-hover); background-color: #f0f9ff; border-color: #bae6fd; font-size: 16px; }
         #db-sheet { font-weight: 700; color: var(--success); background-color: #ecfdf5; border-color: #a7f3d0; }
 
-        /* 💡 실수 교정: 스크롤 관련 속성(max-height, overflow-y 등)을 완전히 삭제하여 내용물만큼 무한히 늘어나게 복구했습니다. */
-        #search-results { 
-            display: none; background: #fff; border: 2px solid #bae6fd; border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2); 
-            position: relative; overflow: hidden; padding-bottom: 10px;
-        }
-        
+        #search-results { display: none; background: #fff; border: 2px solid #bae6fd; border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2); position: relative; overflow: hidden; padding-bottom: 10px; }
         .result-item { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; text-align: left; transition: background 0.2s; }
         .result-item:hover { background: #f0f9ff; }
         .result-item strong { display: block; font-size: 15px; color: var(--primary-dark); margin-bottom: 6px; }
@@ -91,7 +86,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V4.1</span>
+        <span>(주)METRO R&S 현장관리 시스템 V4.2</span>
     </div>
 </header>
 
@@ -192,8 +187,10 @@
             });
             [1,2,3].forEach(i => {
                 if(d['p'+i] && d['p'+i].length > 100) {
-                    document.getElementById('p'+i).src = d['p'+i];
-                    document.getElementById('p'+i).style.display = 'block';
+                    let imgEl = document.getElementById('p'+i);
+                    imgEl.src = d['p'+i];
+                    imgEl.dataset.raw = d['p'+i+'_raw'] || ""; // 💡 원본 데이터 복구
+                    imgEl.style.display = 'block';
                     document.getElementById('t'+i).style.display = 'none';
                 }
             });
@@ -298,6 +295,9 @@
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } 
                         else { sH = w / targetRatio; sY = (h - sH) / 2; }
                         c.width = 1200; c.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
+                        
+                        // 💡 중요: 도장을 찍기 전의 '깨끗한 원본 사진'을 브라우저에 몰래 저장해 둡니다.
+                        document.getElementById(pId).dataset.raw = c.toDataURL('image/jpeg', 0.8);
                         document.getElementById(pId).src = addWM(c);
                     }
                     
@@ -321,8 +321,12 @@
         ctx.lineWidth = 1; ctx.strokeStyle = "black"; ctx.strokeRect(x, y, bw, bh); 
         const rows = 5; const rowH = bh / rows; const colW = bw * 0.25; 
         ctx.font = `${Math.floor(rowH * 0.5)}px sans-serif`; ctx.fillStyle = "black"; ctx.textBaseline = "middle";
-        const d = getD(); const vls = [d.site, `${d.dong}동 ${d.ho}호`, (d.desc||"").substring(0,35), d.work, d.date];
-        const lbls = ["현 장", "위 치", "내 용", "공 정", "일 자"];
+        
+        const d = getD(); 
+        const vls = [d.site, `${d.dong}동 ${d.ho}호`, (d.desc||"").substring(0,35), d.work, d.date];
+        // 💡 '공 정'을 '공 종'으로 변경했습니다.
+        const lbls = ["현 장", "위 치", "내 용", "공 종", "일 자"];
+        
         for(let i=0; i<rows; i++) {
             const curY = y + (rowH * i);
             if (i > 0) { ctx.beginPath(); ctx.moveTo(x, curY); ctx.lineTo(x + bw, curY); ctx.stroke(); }
@@ -332,16 +336,51 @@
         return c.toDataURL('image/jpeg', 0.6); 
     }
 
+    // 💡 전송/저장 버튼을 누르는 순간, 숨겨둔 원본 사진을 꺼내어 '최신 글씨'로 도장을 다시 찍는 마법의 함수!
+    async function applyFinalWatermark() {
+        return new Promise((resolve) => {
+            let targets = ['p1', 'p2'].filter(id => document.getElementById(id).dataset.raw && document.getElementById(id).dataset.raw.length > 100);
+            if(targets.length === 0) return resolve();
+
+            let processed = 0;
+            targets.forEach(pId => {
+                const imgEl = document.getElementById(pId);
+                const tempImg = new Image();
+                tempImg.onload = () => {
+                    const c = document.createElement('canvas');
+                    c.width = 1200; c.height = 900;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(tempImg, 0, 0);
+                    imgEl.src = addWM(c); // 방금 수정한 최신 텍스트로 도장 찍기!
+                    processed++;
+                    if(processed === targets.length) resolve();
+                };
+                tempImg.src = imgEl.dataset.raw;
+            });
+        });
+    }
+
     function getD() { 
         return { 
             date: document.getElementById('today-date').value, site: document.getElementById('site').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value,
-            p1: document.getElementById('p1').src, p2: document.getElementById('p2').src, p3: document.getElementById('p3').src 
+            p1: document.getElementById('p1').src, 
+            p1_raw: document.getElementById('p1').dataset.raw || "", // 원본 사진도 함께 묶어서 관리
+            p2: document.getElementById('p2').src, 
+            p2_raw: document.getElementById('p2').dataset.raw || "",
+            p3: document.getElementById('p3').src 
         }; 
     }
 
-    function saveLocal() {
+    async function saveLocal() {
         if(isProcessingImage) return alert("⏳ 아이폰 사진 처리가 진행 중입니다.\n1~2초만 기다리신 후 다시 눌러주세요!");
-        const d = getD(); if(!d.dong || !d.ho) return alert("동, 호수 정보를 입력하세요.");
+        
+        document.getElementById('generating-badge').innerText = "⏳ 데이터 정리 중...";
+        document.getElementById('generating-badge').style.display = 'block';
+        await applyFinalWatermark(); // 저장 직전 워터마크 최신화
+        document.getElementById('generating-badge').style.display = 'none';
+
+        const d = getD(); 
+        if(!d.dong || !d.ho) return alert("동, 호수 정보를 입력하세요.");
         if (editingIndex > -1) { savedList[editingIndex] = d; } else { savedList.push(d); }
         
         try {
@@ -373,11 +412,21 @@
     function loadLocal(i) {
         const d = savedList[i];
         document.getElementById('today-date').value = d.date; document.getElementById('dong').value = d.dong; document.getElementById('ho').value = d.ho; document.getElementById('loc').value = d.loc; document.getElementById('work').value = d.work; document.getElementById('type').value = d.type; document.getElementById('contractor').value = d.contractor; document.getElementById('desc').value = d.desc;
-        [1, 2, 3].forEach(num => {
+        [1, 2].forEach(num => {
             const imgEl = document.getElementById('p' + num); const textEl = document.getElementById('t' + num); const imgSrc = d['p' + num];
-            if (imgSrc && imgSrc.length > 100) { imgEl.src = imgSrc; imgEl.style.display = 'block'; textEl.style.display = 'none'; } 
-            else { imgEl.src = ''; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
+            if (imgSrc && imgSrc.length > 100) { 
+                imgEl.src = imgSrc; 
+                imgEl.dataset.raw = d['p' + num + '_raw'] || ""; // 원본 사진도 다시 불러오기
+                imgEl.style.display = 'block'; textEl.style.display = 'none'; 
+            } else { 
+                imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.style.display = 'none'; textEl.style.display = 'block'; 
+            }
         });
+        
+        // 완료확인서는 워터마크가 없으므로 별도 처리
+        if (d.p3 && d.p3.length > 100) { document.getElementById('p3').src = d.p3; document.getElementById('p3').style.display = 'block'; document.getElementById('t3').style.display = 'none'; } 
+        else { document.getElementById('p3').src = ''; document.getElementById('p3').style.display = 'none'; document.getElementById('t3').style.display = 'block'; }
+        
         editingIndex = i; 
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; 
         autoSave(); 
@@ -385,7 +434,11 @@
 
     function clearInputs(isFullClear) { 
         ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
-        [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
+        [1,2,3].forEach(i => { 
+            let el = document.getElementById('p'+i);
+            el.style.display='none'; el.src=''; el.dataset.raw=''; 
+            document.getElementById('t'+i).style.display='block'; 
+        }); 
         editingIndex = -1; 
         document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
         if(isFullClear) localStorage.removeItem('metro_autoSave'); 
@@ -393,7 +446,11 @@
 
     function resetAfterSend() {
         ['dong','ho','loc','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
-        [1,2,3].forEach(i => { document.getElementById('p'+i).style.display='none'; document.getElementById('t'+i).style.display='block'; document.getElementById('p'+i).src=''; }); 
+        [1,2,3].forEach(i => { 
+            let el = document.getElementById('p'+i);
+            el.style.display='none'; el.src=''; el.dataset.raw=''; 
+            document.getElementById('t'+i).style.display='block'; 
+        }); 
         editingIndex = -1; 
         document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
         autoSave(); 
@@ -409,22 +466,32 @@
 
     async function send() {
         if(isProcessingImage) return alert("⏳ 아이폰 사진 처리가 진행 중입니다.\n잠시만 기다리신 후 다시 눌러주세요!");
-        const btn = document.getElementById('btn-send'); const d = getD();
-        if(!currentSid || !d.dong || !d.ho) return alert("현장 및 정보를 확인하세요.");
+        const btn = document.getElementById('btn-send'); 
+        
+        // 전송 조건 1차 확인
+        const d_init = getD();
+        if(!currentSid || !d_init.dong || !d_init.ho) return alert("현장 및 정보를 확인하세요.");
         
         btn.innerHTML = "⏳ 준비 중..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
         
         document.querySelector('.container').style.display = 'none';
         document.querySelector('header').style.display = 'none';
         document.getElementById('generating-badge').style.display = 'block';
+        document.getElementById('generating-badge').innerText = "⏳ 사진 정보 최신화 중...";
         window.scrollTo(0, 0);
 
         try {
+            // 💡 전송 직전 마법! 사진에 가장 최신 글씨로 도장을 다시 쾅! 찍습니다.
+            await applyFinalWatermark();
+            
+            // 새롭게 갱신된 데이터를 긁어옵니다.
+            const d = getD();
+            
             let hasPhotos = (d.p1 && d.p1.length > 100) || (d.p2 && d.p2.length > 100);
             let pdfBase64Data = "";
 
             if (hasPhotos) {
-                document.getElementById('generating-badge').innerText = "⏳ 문서 생성 중...";
+                document.getElementById('generating-badge').innerText = "⏳ 사진대지 생성 중...";
                 document.getElementById('pdf-date').innerText = d.date; document.getElementById('pdf-contractor').innerText = d.contractor;
                 document.getElementById('pdf-site').innerText = d.site; document.getElementById('pdf-unit').innerText = `${d.dong}동 ${d.ho}호`;
                 document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-desc').innerText = d.desc;
@@ -435,7 +502,7 @@
                 await new Promise(resolve => setTimeout(resolve, 600)); 
 
                 const pdf = await html2pdf().set({ 
-                    margin: 0, filename: `보고서_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
+                    margin: 0, filename: `사진대지_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 }, 
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                 }).from(el).output('datauristring');
@@ -460,7 +527,6 @@
             document.querySelector('.container').style.display = 'block';
             document.querySelector('header').style.display = 'block';
             document.getElementById('generating-badge').style.display = 'none';
-            document.getElementById('generating-badge').innerText = "⏳ 문서 생성 및 전송 중...";
 
             if(j.result==='success') { 
                 alert("🎉 성공적으로 전송되었습니다!"); 
