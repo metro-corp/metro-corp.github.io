@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V4.9</title>
+    <title>(주)METRO R&S 현장관리 시스템 V5.3</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -75,7 +75,12 @@
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
 
-        #pdf-template { display: none; width: 794px; height: 1122px; padding: 40px; background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; margin: 0 auto; }
+        /* 💡 V5.3 하단 여백 확보: padding-bottom을 80px로 넉넉하게 주어 바닥에 붙는 현상 해결 */
+        #pdf-template { 
+            display: none; width: 794px; height: 1122px; padding: 40px 40px 80px 40px; 
+            background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; margin: 0 auto; 
+        }
+        
         #generating-badge { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 16px; white-space: nowrap; }
 
         #custom-alert {
@@ -110,7 +115,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V4.9</span>
+        <span>(주)METRO R&S 현장관리 시스템 V5.3</span>
     </div>
 </header>
 
@@ -179,39 +184,42 @@
 <div id="pdf-template">
     <p style="text-align: center; font-size: 26px; font-weight: 900; margin-top: 0; margin-bottom: 25px; letter-spacing: 15px; font-family: 'Malgun Gothic', sans-serif;">사 진 대 지</p>
 
-    <table style="width:100%; border-collapse:collapse; border:2px solid #000; font-size:14px; margin-top:0;">
-        <tr>
+    <table style="width:100%; height: 100%; border-collapse:collapse; border:2px solid #000; font-size:14px; margin-top:0;">
+        <tr style="height: 40px;">
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">현장명</td>
             <td id="pdf-site" colspan="3" style="border:1px solid #000; padding:10px; text-align:center; font-weight:bold; font-size:15px;"></td>
         </tr>
-        <tr>
+        <tr style="height: 40px;">
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">동/호</td>
             <td id="pdf-unit" style="border:1px solid #000; padding:10px; width:35%; text-align:left;"></td>
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">위치</td>
             <td id="pdf-loc" style="border:1px solid #000; padding:10px; width:35%; text-align:left;"></td>
         </tr>
-        <tr>
+        <tr style="height: 40px;">
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; text-align:center;">공종</td>
             <td id="pdf-work" style="border:1px solid #000; padding:10px; text-align:left;"></td>
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; text-align:center;">시공업체</td>
             <td id="pdf-contractor" style="border:1px solid #000; padding:10px; text-align:left;"></td>
         </tr>
-        <tr>
+        <tr style="height: 40px;">
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; text-align:center;">일자</td>
             <td id="pdf-date" colspan="3" style="border:1px solid #000; padding:10px; text-align:left;"></td>
         </tr>
         <tr>
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; text-align:center;">내용</td>
-            <td id="pdf-desc" colspan="3" style="border:1px solid #000; padding:10px; height:60px; text-align:left; vertical-align:top;"></td>
+            <td id="pdf-desc" colspan="3" style="border:1px solid #000; padding:10px; text-align:left; vertical-align:top;"></td>
         </tr>
         
         <tr>
-            <td colspan="4" style="border:1px solid #000; padding: 30px 0 50px 0; text-align: center; vertical-align: top;">
-                <p style="font-weight:900; margin-top:0; margin-bottom:10px; font-size:16px;">[ 작 업 전 ]</p>
-                <img id="pdf-p1" style="width:460px; height:320px; object-fit:contain; display:block; margin:0 auto 30px auto;">
-                
-                <p style="font-weight:900; margin-top:0; margin-bottom:10px; font-size:16px;">[ 작 업 후 ]</p>
-                <img id="pdf-p2" style="width:460px; height:320px; object-fit:contain; display:block; margin:0 auto;">
+            <td colspan="4" style="border:1px solid #000; padding: 15px 0; text-align: center; vertical-align: middle; height: 350px;">
+                <p style="font-weight:900; margin-top:0; margin-bottom:8px; font-size:16px;">[ 작 업 전 ]</p>
+                <img id="pdf-p1" style="width:480px; height:300px; object-fit:contain; display:block; margin:0 auto;">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" style="border:1px solid #000; padding: 15px 0; text-align: center; vertical-align: middle; height: 350px;">
+                <p style="font-weight:900; margin-top:0; margin-bottom:8px; font-size:16px;">[ 작 업 후 ]</p>
+                <img id="pdf-p2" style="width:480px; height:300px; object-fit:contain; display:block; margin:0 auto;">
             </td>
         </tr>
     </table>
@@ -382,23 +390,59 @@
 
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
-        const bw = w * 0.45; const bh = h * 0.25; const x = 0, y = h - bh; 
-        ctx.fillStyle = "white"; ctx.fillRect(x, y, bw, bh);
-        ctx.lineWidth = 1; ctx.strokeStyle = "black"; ctx.strokeRect(x, y, bw, bh); 
-        const rows = 5; const rowH = bh / rows; const colW = bw * 0.25; 
-        ctx.font = `${Math.floor(rowH * 0.5)}px sans-serif`; ctx.fillStyle = "black"; ctx.textBaseline = "middle";
+        const bw = w * 0.45; const colW = bw * 0.25; const maxTextWidth = bw - colW - 20; 
+
+        const fontSize = 18; ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillStyle = "black"; ctx.textBaseline = "middle";
+
+        const d = getD();
+        const rawDesc = (d.desc || "").replace(/\n/g, ' '); 
+        let descLines = []; let tempLine = '';
         
-        const d = getD(); 
-        const vls = [d.site, `${d.dong}동 ${d.ho}호`, (d.desc||"").substring(0,35), d.work, d.date];
-        const lbls = ["현 장", "위 치", "내 용", "공 종", "일 자"];
-        
-        for(let i=0; i<rows; i++) {
-            const curY = y + (rowH * i);
-            if (i > 0) { ctx.beginPath(); ctx.moveTo(x, curY); ctx.lineTo(x + bw, curY); ctx.stroke(); }
-            ctx.fillText(lbls[i], x + 10, curY + (rowH / 2)); ctx.fillText(vls[i], x + colW + 10, curY + (rowH / 2));    
+        for(let i = 0; i < rawDesc.length; i++) {
+            let testLine = tempLine + rawDesc[i];
+            if(ctx.measureText(testLine).width > maxTextWidth && i > 0) {
+                descLines.push(tempLine); tempLine = rawDesc[i];
+            } else { tempLine = testLine; }
         }
-        ctx.beginPath(); ctx.moveTo(x + colW, y); ctx.lineTo(x + colW, y + bh); ctx.stroke();
-        return c.toDataURL('image/jpeg', 0.6); 
+        if(tempLine) descLines.push(tempLine);
+        if(descLines.length === 0) descLines.push("");
+        if(descLines.length > 4) { descLines = descLines.slice(0, 4); descLines[3] = descLines[3].slice(0, -3) + "..."; }
+
+        const baseRowH = 40; const descRowH = Math.max(baseRowH, descLines.length * 22 + 10); 
+        const totalH = (baseRowH * 4) + descRowH; const x = 0, y = h - totalH; 
+
+        ctx.fillStyle = "white"; ctx.fillRect(x, y, bw, totalH);
+        ctx.lineWidth = 1; ctx.strokeStyle = "black"; ctx.strokeRect(x, y, bw, totalH);
+
+        const vls = [d.site, `${d.dong}동 ${d.ho}호`, descLines, d.work, d.date];
+        const lbls = ["현 장", "위 치", "내 용", "공 종", "일 자"];
+
+        ctx.fillStyle = "black"; let curY = y;
+
+        for(let i=0; i<5; i++) {
+            let currentRowH = (i === 2) ? descRowH : baseRowH;
+            if (i > 0) { ctx.beginPath(); ctx.moveTo(x, curY); ctx.lineTo(x + bw, curY); ctx.stroke(); }
+            ctx.fillText(lbls[i], x + 10, curY + (currentRowH / 2));
+            const textX = x + colW + 10;
+            
+            if (i === 2) {
+                ctx.textBaseline = "top";
+                let startY = curY + (currentRowH - (descLines.length * 22)) / 2;
+                for(let j=0; j<descLines.length; j++) { ctx.fillText(descLines[j], textX, startY + (j * 22) + 2); }
+                ctx.textBaseline = "middle";
+            } else {
+                let valText = vls[i];
+                if(ctx.measureText(valText).width > maxTextWidth) {
+                    while(ctx.measureText(valText + "...").width > maxTextWidth && valText.length > 0) { valText = valText.slice(0, -1); }
+                    valText += "...";
+                }
+                ctx.fillText(valText, textX, curY + (currentRowH / 2));
+            }
+            curY += currentRowH;
+        }
+        ctx.beginPath(); ctx.moveTo(x + colW, y); ctx.lineTo(x + colW, y + totalH); ctx.stroke();
+        return c.toDataURL('image/jpeg', 0.8); 
     }
 
     async function applyFinalWatermark() {
