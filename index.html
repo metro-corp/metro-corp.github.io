@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V5.5</title>
+    <title>(주)METRO R&S 현장관리 시스템 V5.6</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -47,6 +47,11 @@
         textarea { resize: vertical; min-height: 100px; }
         #site-select { font-weight: 700; color: var(--accent-hover); background-color: #f0f9ff; border-color: #bae6fd; font-size: 16px; }
         #db-sheet { font-weight: 700; color: var(--success); background-color: #ecfdf5; border-color: #a7f3d0; }
+
+        .toggle-btn-group { display: flex; gap: 10px; background: var(--input-bg); padding: 8px; border-radius: 14px; border: 1.5px solid var(--border-light); }
+        .toggle-btn-group label { flex: 1; text-align: center; padding: 10px; font-weight: 700; font-size: 14px; color: var(--text-sub); cursor: pointer; border-radius: 10px; transition: all 0.2s; }
+        .toggle-btn-group input[type="radio"] { display: none; }
+        .toggle-btn-group input[type="radio"]:checked + span { background: var(--accent); color: white; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2); display: block; padding: 10px; border-radius: 10px; margin: -10px; }
 
         #search-results { display: none; background: #fff; border: 2px solid #bae6fd; border-radius: 12px; margin-top: -5px; margin-bottom: 15px; grid-column: span 2; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2); position: relative; overflow: hidden; padding-bottom: 10px; }
         .result-item { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; text-align: left; transition: background 0.2s; }
@@ -114,7 +119,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://via.placeholder.com/100x30?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V5.5</span>
+        <span>(주)METRO R&S 현장관리 시스템 V5.6</span>
     </div>
 </header>
 
@@ -132,11 +137,24 @@
             <input type="date" id="today-date" class="full">
             <select id="db-sheet" onchange="clearInputs(false)" class="full"><option value="">현장을 먼저 선택해주세요</option></select>
             
+            <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
+            
+            <div class="full toggle-btn-group">
+                <label>
+                    <input type="radio" name="area-type" value="private" checked onchange="toggleArea()">
+                    <span>🏠 세대 (전용부)</span>
+                </label>
+                <label>
+                    <input type="radio" name="area-type" value="common" onchange="toggleArea()">
+                    <span>🏢 공용부 및 기타</span>
+                </label>
+            </div>
+
             <input type="text" id="dong" placeholder="동" oninput="search()">
             <input type="text" id="ho" placeholder="호" oninput="search()">
             
             <div id="search-results"></div>
-            <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
+            
             <input type="text" id="loc" placeholder="위치">
             <input type="text" id="work" placeholder="공종">
             <input type="text" id="type" placeholder="하자 유형">
@@ -174,7 +192,7 @@
     <div class="section">
         <div class="section-title"><span>목록</span> 임시 저장 내역 (<span id="count" style="color:var(--accent);">0</span>건)</div>
         <table>
-            <thead><tr><th style="width:10%">No</th><th style="width:50%">동/호 (공종)</th><th style="width:40%">관리</th></tr></thead>
+            <thead><tr><th style="width:10%">No</th><th style="width:50%">작업 장소 (공종)</th><th style="width:40%">관리</th></tr></thead>
             <tbody id="list-body"><tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr></tbody>
         </table>
     </div>
@@ -189,7 +207,7 @@
             <td id="pdf-site" colspan="3" style="border:1px solid #000; padding:10px; text-align:center; font-weight:bold; font-size:15px;"></td>
         </tr>
         <tr style="height: 40px;">
-            <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">동/호</td>
+            <td id="pdf-unit-label" style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">동/호</td>
             <td id="pdf-unit" style="border:1px solid #000; padding:10px; width:35%; text-align:left;"></td>
             <td style="border:1px solid #000; padding:10px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">위치</td>
             <td id="pdf-loc" style="border:1px solid #000; padding:10px; width:35%; text-align:left;"></td>
@@ -231,6 +249,25 @@
     let editingIndex = -1; 
     let isProcessingImage = false; 
 
+    // 💡 V5.6: 토글 버튼을 누르면 화면이 바뀌는 마법의 함수
+    function toggleArea() {
+        const type = document.querySelector('input[name="area-type"]:checked').value;
+        const dongInput = document.getElementById('dong');
+        const hoInput = document.getElementById('ho');
+        
+        if (type === 'private') {
+            dongInput.placeholder = "동";
+            dongInput.classList.remove('full');
+            hoInput.style.display = "block";
+            if(hoInput.value === "-") hoInput.value = ""; // 공용부에서 넘어올때 리셋
+        } else {
+            dongInput.placeholder = "공용부 상세 위치 (예: 지하 1층 주차장, 101동 공용현관)";
+            dongInput.classList.add('full');
+            hoInput.style.display = "none";
+            hoInput.value = "-"; // DB 구조 유지를 위한 꼼수
+        }
+    }
+
     function showMsg(msg) {
         document.getElementById('alert-msg').innerText = msg;
         const alertEl = document.getElementById('custom-alert');
@@ -255,6 +292,15 @@
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
             let d = JSON.parse(auto);
+            
+            // 저장된 데이터가 공용부면 토글을 공용부로 변경
+            if(d.ho === "-") {
+                document.querySelector('input[name="area-type"][value="common"]').checked = true;
+            } else {
+                document.querySelector('input[name="area-type"][value="private"]').checked = true;
+            }
+            toggleArea();
+
             ['date','dong','ho','loc','work','type','contractor','desc'].forEach(id => {
                 if(document.getElementById(id) && d[id]) document.getElementById(id).value = d[id];
             });
@@ -263,7 +309,6 @@
                     let imgEl = document.getElementById('p'+i);
                     imgEl.src = d['p'+i];
                     imgEl.dataset.raw = d['p'+i+'_raw'] || ""; 
-                    // 💡 저장된 워터마크 여부 복원
                     imgEl.dataset.wm = d['p'+i+'_wm'] !== undefined ? d['p'+i+'_wm'] : "true";
                     imgEl.style.display = 'block';
                     document.getElementById('t'+i).style.display = 'none';
@@ -324,8 +369,16 @@
 
     function search() {
         const sheet = document.getElementById('db-sheet').value, d = document.getElementById('dong').value.trim(), h = document.getElementById('ho').value.trim(), res = document.getElementById('search-results');
-        if(!sheet || !d || !h) { res.style.display='none'; return; }
-        const matches = (cloudDB[sheet] || []).filter(v => String(v.dong)===d && String(v.ho)===h);
+        const isCommon = document.querySelector('input[name="area-type"]:checked').value === 'common';
+        
+        if(!sheet || !d || (!isCommon && !h)) { res.style.display='none'; return; }
+        
+        // 💡 V5.6: 공용부 검색 시에는 '호'를 무시하고 '동(입력내용)'으로만 부분 검색되도록 똑똑하게 변경!
+        const matches = (cloudDB[sheet] || []).filter(v => {
+            if (isCommon) return String(v.dong).includes(d) && String(v.ho) === "-";
+            return String(v.dong) === d && String(v.ho) === h;
+        });
+
         if(matches.length>0) {
             let htmlStr = `<div style="position:sticky; top:0; background:rgba(240, 249, 255, 0.95); backdrop-filter:blur(5px); padding:12px 16px; font-weight:800; font-size:14px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100;">
                 <span>🔍 내역 ${matches.length}건</span>
@@ -347,10 +400,8 @@
 
     function proc(input, pId, tId) {
         if(input.files && input.files[0]) {
-            // 💡 V5.5 핵심: 사진 선택 시 워터마크 여부 묻기
             let applyWm = true;
             if(pId === 'p1' || pId === 'p2') {
-                // 사용자가 [확인]을 누르면 true, [취소]를 누르면 false가 됩니다.
                 applyWm = confirm("📷 사진에 현장 정보(워터마크)를 추가하시겠습니까?\n\n[확인] 워터마크 표기\n[취소] 원본 사진 유지");
             }
             
@@ -380,15 +431,10 @@
                         c.width = 1200; c.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
                         
                         document.getElementById(pId).dataset.raw = c.toDataURL('image/jpeg', 0.8);
-                        // 💡 선택한 결과(워터마크 여부)를 사진 데이터에 저장해둡니다.
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
                         
-                        // 사용자가 확인(true)을 누른 경우에만 도장을 찍어 보여줍니다.
-                        if(applyWm) {
-                            document.getElementById(pId).src = addWM(c);
-                        } else {
-                            document.getElementById(pId).src = document.getElementById(pId).dataset.raw;
-                        }
+                        if(applyWm) { document.getElementById(pId).src = addWM(c); } 
+                        else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
                     }
                     
                     document.getElementById(pId).style.display='block'; 
@@ -431,7 +477,9 @@
         ctx.fillStyle = "white"; ctx.fillRect(x, y, bw, totalH);
         ctx.lineWidth = 1; ctx.strokeStyle = "black"; ctx.strokeRect(x, y, bw, totalH);
 
-        const vls = [d.site, `${d.dong}동 ${d.ho}호`, descLines, d.work, d.date];
+        // 💡 V5.6: 워터마크에도 공용부/전용부 텍스트 구분
+        const locText = d.ho === "-" ? d.dong : `${d.dong}동 ${d.ho}호`;
+        const vls = [d.site, locText, descLines, d.work, d.date];
         const lbls = ["현 장", "위 치", "내 용", "공 종", "일 자"];
 
         ctx.fillStyle = "black"; let curY = y;
@@ -463,8 +511,6 @@
 
     async function applyFinalWatermark() {
         return new Promise((resolve) => {
-            // 💡 전송 시 텍스트 내용이 바뀌었을 경우를 대비해 워터마크를 다시 찍는 부분
-            // 여기서 워터마크 여부(.wm === "true")인 사진만 걸러냅니다!
             let targets = ['p1', 'p2'].filter(id => document.getElementById(id).dataset.raw && document.getElementById(id).dataset.raw.length > 100 && document.getElementById(id).dataset.wm === "true");
             
             if(targets.length === 0) return resolve();
@@ -492,10 +538,10 @@
             date: document.getElementById('today-date').value, site: document.getElementById('site').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value,
             p1: document.getElementById('p1').src, 
             p1_raw: document.getElementById('p1').dataset.raw || "", 
-            p1_wm: document.getElementById('p1').dataset.wm || "true", // 💡 워터마크 상태 저장
+            p1_wm: document.getElementById('p1').dataset.wm || "true",
             p2: document.getElementById('p2').src, 
             p2_raw: document.getElementById('p2').dataset.raw || "",
-            p2_wm: document.getElementById('p2').dataset.wm || "true", // 💡 워터마크 상태 저장
+            p2_wm: document.getElementById('p2').dataset.wm || "true",
             p3: document.getElementById('p3').src 
         }; 
     }
@@ -510,7 +556,7 @@
 
         const d = getD(); 
         if(!currentSid || !d.dong || !d.ho || !d.loc || !d.work || !d.type || !d.contractor || !d.desc) {
-            return showMsg("🚨 필수 정보 누락!\n현장, 동/호수, 위치, 공종, 하자유형, 시공업체, 작업내용을 빠짐없이 입력해 주세요.");
+            return showMsg("🚨 필수 정보 누락!\n현장, 장소, 위치, 공종, 하자유형, 시공업체, 작업내용을 빠짐없이 입력해 주세요.");
         }
 
         if (editingIndex > -1) { savedList[editingIndex] = d; } else { savedList.push(d); }
@@ -526,30 +572,41 @@
 
     function updateTable() {
         const b = document.getElementById('list-body');
-        b.innerHTML = savedList.length ? savedList.map((r, i) => 
-            `<tr><td style="font-weight:700; color:var(--text-sub);">${i+1}</td>
+        b.innerHTML = savedList.length ? savedList.map((r, i) => {
+            // 💡 V5.6: 목록 표시할 때 공용부이면 이름 예쁘게 보여주기
+            const locText = r.ho === "-" ? r.dong : `${r.dong}동 ${r.ho}호`;
+            return `<tr><td style="font-weight:700; color:var(--text-sub);">${i+1}</td>
                 <td style="text-align:left; padding-left:10px; word-break:keep-all; white-space:nowrap;">
-                    <span style="font-weight:700;">${r.dong}동 ${r.ho}호</span><span style="color:var(--accent); font-weight:700; font-size:12px; background:#e0e7ff; padding:2px 6px; border-radius:4px; margin-left:4px;">${r.work}</span>
+                    <span style="font-weight:700;">${locText}</span><span style="color:var(--accent); font-weight:700; font-size:12px; background:#e0e7ff; padding:2px 6px; border-radius:4px; margin-left:4px;">${r.work}</span>
                 </td>
                 <td style="padding-left:4px; padding-right:4px;">
                     <div style="display:flex; gap:4px; justify-content:center;">
                         <button class="action-btn" onclick="loadLocal(${i})">불러오기</button>
                         <button class="action-btn del" onclick="delLocal(${i})">삭제</button>
                     </div>
-                </td></tr>`
-        ).join('') : '<tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr>';
+                </td></tr>`;
+        }).join('') : '<tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr>';
         document.getElementById('count').innerText = savedList.length;
     }
     
     function loadLocal(i) {
         const d = savedList[i];
+        
+        // 💡 불러올 때 토글 스위치 상태 맞추기
+        if(d.ho === "-") {
+            document.querySelector('input[name="area-type"][value="common"]').checked = true;
+        } else {
+            document.querySelector('input[name="area-type"][value="private"]').checked = true;
+        }
+        toggleArea();
+
         document.getElementById('today-date').value = d.date; document.getElementById('dong').value = d.dong; document.getElementById('ho').value = d.ho; document.getElementById('loc').value = d.loc; document.getElementById('work').value = d.work; document.getElementById('type').value = d.type; document.getElementById('contractor').value = d.contractor; document.getElementById('desc').value = d.desc;
         [1, 2].forEach(num => {
             const imgEl = document.getElementById('p' + num); const textEl = document.getElementById('t' + num); const imgSrc = d['p' + num];
             if (imgSrc && imgSrc.length > 100) { 
                 imgEl.src = imgSrc; 
                 imgEl.dataset.raw = d['p' + num + '_raw'] || ""; 
-                imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; // 💡 불러올 때 세팅
+                imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; 
                 imgEl.style.display = 'block'; textEl.style.display = 'none'; 
             } else { 
                 imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.dataset.wm = "true"; imgEl.style.display = 'none'; textEl.style.display = 'block'; 
@@ -566,6 +623,11 @@
 
     function clearInputs(isFullClear) { 
         ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
+        
+        // 리셋 후 전용부 모드로 초기화
+        document.querySelector('input[name="area-type"][value="private"]').checked = true;
+        toggleArea();
+
         [1,2,3].forEach(i => { 
             let el = document.getElementById('p'+i);
             el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true';
@@ -578,6 +640,10 @@
 
     function resetAfterSend() {
         ['dong','ho','loc','type','contractor','desc'].forEach(id => document.getElementById(id).value=''); 
+        
+        document.querySelector('input[name="area-type"][value="private"]').checked = true;
+        toggleArea();
+
         [1,2,3].forEach(i => { 
             let el = document.getElementById('p'+i);
             el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true';
@@ -601,8 +667,9 @@
         const btn = document.getElementById('btn-send'); 
         
         const d_init = getD();
+        
         if(!currentSid || !d_init.dong || !d_init.ho || !d_init.loc || !d_init.work || !d_init.type || !d_init.contractor || !d_init.desc) {
-            return showMsg("🚨 필수 정보 누락!\n현장, 동/호수, 위치, 공종, 하자유형, 시공업체, 작업내용을 빠짐없이 입력해 주세요.");
+            return showMsg("🚨 필수 정보 누락!\n현장, 장소, 위치, 공종, 하자유형, 시공업체, 작업내용을 빠짐없이 입력해 주세요.");
         }
         
         btn.innerHTML = "⏳ 준비 중..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
@@ -625,7 +692,16 @@
                 document.getElementById('generating-badge').innerText = "⏳ 사진대지 생성 중...";
                 
                 document.getElementById('pdf-site').innerText = d.site;
-                document.getElementById('pdf-unit').innerText = `${d.dong}동 ${d.ho}호`;
+                
+                // 💡 V5.6: PDF 타이틀 똑똑하게 바꾸기
+                if(d.ho === "-") {
+                    document.getElementById('pdf-unit-label').innerText = "공용부";
+                    document.getElementById('pdf-unit').innerText = d.dong;
+                } else {
+                    document.getElementById('pdf-unit-label').innerText = "동/호";
+                    document.getElementById('pdf-unit').innerText = `${d.dong}동 ${d.ho}호`;
+                }
+
                 document.getElementById('pdf-loc').innerText = d.loc;
                 document.getElementById('pdf-work').innerText = d.work; 
                 document.getElementById('pdf-contractor').innerText = d.contractor;
@@ -639,7 +715,7 @@
                 await new Promise(resolve => setTimeout(resolve, 600)); 
 
                 const pdf = await html2pdf().set({ 
-                    margin: 0, filename: `사진대지_${d.dong}동_${d.ho}호.pdf`, image: { type: 'jpeg', quality: 0.98 },
+                    margin: 0, filename: `사진대지_${d.ho === "-" ? d.dong : d.dong + "동_" + d.ho + "호"}.pdf`, image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 }, 
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
                 }).from(el).output('datauristring');
