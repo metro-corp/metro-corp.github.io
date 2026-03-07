@@ -176,17 +176,16 @@
     </div>
 
     <div class="section">
-        <!-- 💡 디자인 수정: 사진과 동일한 헤더 스타일 적용 -->
         <div class="section-title">
-            <span style="background: #e0e7ff; color: var(--accent); padding: 4px 12px; border-radius: 8px; font-size: 14px; margin-right: 10px; width: auto; height: auto;">목록</span> 
-            임시 저장 내역 ( <span id="count" style="background: #e0e7ff; color: var(--accent); padding: 2px 12px; border-radius: 12px; margin: 0 5px; width: auto; height: auto;">0</span> 건)
+            <span style="background: #e0e7ff; color: var(--accent); padding: 4px 12px; border-radius: 10px; font-size: 14px; margin-right: 12px; width: auto; height: auto; font-weight: 800;">목록</span> 
+            임시 저장 내역 ( <span id="count" style="background: #e0e7ff; color: var(--accent); padding: 2px 14px; border-radius: 14px; margin: 0 5px; width: auto; height: auto; font-weight: 800;">0</span> 건)
         </div>
         <table>
             <thead>
                 <tr style="background: #f8fafc;">
-                    <th style="width:10%; border-top-left-radius: 12px;">No</th>
-                    <th style="width:50%; text-align: left; padding-left: 20px;">작업 장소 (공종)</th>
-                    <th style="width:40%; border-top-right-radius: 12px;">관리</th>
+                    <th style="width:10%; border-top-left-radius: 16px; padding: 15px 10px; color: #1e293b; font-weight: 800;">No</th>
+                    <th style="width:50%; text-align: left; padding: 15px 20px; color: #1e293b; font-weight: 800;">작업 장소 (공종)</th>
+                    <th style="width:40%; border-top-right-radius: 16px; padding: 15px 10px; color: #1e293b; font-weight: 800;">관리</th>
                 </tr>
             </thead>
             <tbody id="list-body"><tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr></tbody>
@@ -297,6 +296,7 @@
             const j = await r.json();
             if(j.result==='success') {
                 cloudDB = j.data; d.innerHTML = '<option value="">📑 공종 선택</option>';
+                // 💡 수정사항: n !== "전체_공정마스터" 조건 추가
                 Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "통합_작업기록" && n !== "전체_공정마스터") d.innerHTML += `<option value="${n}">${n}</option>`; });
             }
         } catch(e) { d.innerHTML = '<option value="">❌ 실패</option>'; }
@@ -370,22 +370,24 @@
         localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); clearInputs(true);
     }
 
-    // 💡 수정사항: 사진과 동일한 리스트 스타일 업데이트
+    // 💡 디자인 수정: 사진과 동일한 리스트 스타일 및 배지 적용
     function updateTable() {
         const b = document.getElementById('list-body');
         b.innerHTML = savedList.length ? savedList.map((r, i) => {
             const locText = r.ho === "-" ? r.dong : `${r.dong}동 ${r.ho}호`;
             return `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
-                    <td style="font-weight:700; color:#64748b; padding: 20px 10px; font-size: 16px;">${i+1}</td>
-                    <td style="text-align:left; padding: 20px 10px;">
-                        <span style="font-weight:800; font-size:17px; color:#1e293b; margin-right:8px;">${locText}</span>
-                        <span style="background:#e0e7ff; color:#3b82f6; padding:3px 10px; border-radius:6px; font-size:13px; font-weight:800; white-space: nowrap;">${r.work}</span>
+                    <td style="font-weight:700; color:#64748b; padding: 22px 10px; font-size: 16px; vertical-align: middle;">${i+1}</td>
+                    <td style="text-align:left; padding: 22px 20px; vertical-align: middle;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: nowrap;">
+                            <span style="font-weight:800; font-size:17px; color:#1e293b; white-space: nowrap;">${locText}</span>
+                            <span style="background:#e0e7ff; color:#3b82f6; padding:4px 10px; border-radius:8px; font-size:13px; font-weight:800; white-space: nowrap;">${r.work}</span>
+                        </div>
                     </td>
-                    <td style="padding: 20px 10px;">
-                        <div style="display:flex; gap:8px; justify-content:center;">
-                            <button style="background:#f1f5f9; color:#1e293b; padding:10px 18px; border-radius:12px; font-weight:800; font-size:14px; border:none; cursor:pointer;" onclick="loadLocal(${i})">불러오기</button>
-                            <button style="background:#fee2e2; color:#ef4444; padding:10px 18px; border-radius:12px; font-weight:800; font-size:14px; border:none; cursor:pointer;" onclick="delRecord(${i})">삭제</button>
+                    <td style="padding: 22px 10px; vertical-align: middle;">
+                        <div style="display:flex; gap:10px; justify-content:center; align-items: center;">
+                            <button style="background:#f1f5f9; color:#1e293b; padding:10px 20px; border-radius:14px; font-weight:800; font-size:14px; border:none; cursor:pointer; white-space: nowrap;" onclick="loadLocal(${i})">불러오기</button>
+                            <button style="background:#fee2e2; color:#ef4444; padding:10px 20px; border-radius:14px; font-weight:800; font-size:14px; border:none; cursor:pointer; white-space: nowrap;" onclick="delRecord(${i})">삭제</button>
                         </div>
                     </td>
                 </tr>`;
