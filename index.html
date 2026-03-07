@@ -176,6 +176,7 @@
     </div>
 
     <div class="section">
+        <!-- 💡 사진 디자인 사양으로 복구: 헤더 스타일 -->
         <div class="section-title">
             <span style="background: #e0e7ff; color: var(--accent); padding: 4px 12px; border-radius: 10px; font-size: 14px; margin-right: 12px; width: auto; height: auto; font-weight: 800;">목록</span> 
             임시 저장 내역 ( <span id="count" style="background: #e0e7ff; color: var(--accent); padding: 2px 14px; border-radius: 14px; margin: 0 5px; width: auto; height: auto; font-weight: 800;">0</span> 건)
@@ -370,7 +371,7 @@
         localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); clearInputs(true);
     }
 
-    // 💡 디자인 수정: 사진과 동일한 리스트 스타일 및 배지 적용
+    // 💡 디자인 수정: 사진 사양과 동일한 리스트 및 배지 디자인 적용
     function updateTable() {
         const b = document.getElementById('list-body');
         b.innerHTML = savedList.length ? savedList.map((r, i) => {
@@ -387,7 +388,7 @@
                     <td style="padding: 22px 10px; vertical-align: middle;">
                         <div style="display:flex; gap:10px; justify-content:center; align-items: center;">
                             <button style="background:#f1f5f9; color:#1e293b; padding:10px 20px; border-radius:14px; font-weight:800; font-size:14px; border:none; cursor:pointer; white-space: nowrap;" onclick="loadLocal(${i})">불러오기</button>
-                            <button style="background:#fee2e2; color:#ef4444; padding:10px 20px; border-radius:14px; font-weight:800; font-size:14px; border:none; cursor:pointer; white-space: nowrap;" onclick="delRecord(${i})">삭제</button>
+                            <button style="background:#fee2e2; color:#ef4444; padding:10px 20px; border-radius:14px; font-weight:800; font-size:14px; border:none; cursor:pointer; white-space: nowrap;" onclick="delLocal(${i})">삭제</button>
                         </div>
                     </td>
                 </tr>`;
@@ -405,7 +406,7 @@
         });
     }
 
-    function delRecord(i) { savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); }
+    function delLocal(i) { savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); }
 
     function clearInputs(full) {
         ['dong','ho','loc','work','type','contractor','desc'].forEach(id => document.getElementById(id).value='');
@@ -427,7 +428,7 @@
             const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdf.split(',')[1], p1Base64: d.p1.split(',')[1], p1RawBase64: d.p1_raw.split(',')[1], p2Base64: d.p2.split(',')[1], p2RawBase64: d.p2_raw.split(',')[1], p3Base64: (d.p3)?d.p3.split(',')[1]:"" };
             const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             const j = await r.json();
-            if(j.result==='success') { showMsg("🎉 서버 전송 성공!"); clearInputs(true); if(editingIndex>-1) delRecord(editingIndex); } else { showMsg("❌ 오류: " + j.message); }
+            if(j.result==='success') { showMsg("🎉 서버 전송 성공!"); clearInputs(true); if(editingIndex>-1) delLocal(editingIndex); } else { showMsg("❌ 오류: " + j.message); }
         } catch(e) { showMsg("❌ 전송 실패"); }
         finally { btn.disabled = false; document.getElementById('generating-badge').style.display = 'none'; }
     }
