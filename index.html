@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V8.4</title>
+    <title>(주)METRO R&S 현장관리 시스템 V8.5</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -22,8 +22,6 @@
     
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="shortcut icon" href="logo.png">
-
-    <!-- 💡 [V8.4 수정] 클라이언트 PDF 생성 라이브러리 제거 (속도 및 용량 최적화) -->
     
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -36,8 +34,6 @@
         }
 
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--bg-body); font-size: 15px; color: var(--text-main); padding-bottom: 60px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
-        
-        /* 💡 V8.2 상단 고정 해제 사양 유지 */
         header { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: white; padding: 18px; font-weight: 700; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 17px; }
         
         .container { padding: 15px; max-width: 800px; margin: auto; }
@@ -81,10 +77,22 @@
         th:first-child { border-top-left-radius: 12px; } th:last-child { border-top-right-radius: 12px; }
         tr:last-child td { border-bottom: none; }
         
-        /* 💡 V5.7 디자인 복구 사양 유지 */
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
 
+        #pdf-template { 
+            display: none; 
+            width: 794px; 
+            height: 1122px; 
+            padding: 40px; 
+            background: white; 
+            font-family: 'Malgun Gothic', sans-serif; 
+            box-sizing: border-box; 
+            margin: 0 auto; 
+            overflow: hidden; 
+            position: relative;
+        }
+        
         #generating-badge { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 16px; white-space: nowrap; }
 
         #custom-alert, #notice-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10005; backdrop-filter: blur(3px); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.2s ease; }
@@ -104,11 +112,16 @@
     </div>
 </div>
 
-<!-- 💡 V8.3 공지사항 로직 유지 -->
+<!-- 💡 [V8.5 수정] 공지사항 내용 변경 -->
 <div id="notice-modal">
     <div class="custom-alert-box">
         <div style="background: var(--accent); color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -25px -20px 20px; font-weight: 900; font-size: 15px; letter-spacing: 1px;">📢 공지사항</div>
-        <div class="custom-alert-msg" id="notice-msg" style="text-align: left; font-size: 14px; font-weight: 600;">1. 새로고침시 잠시 기다려 주세요. 데이터가 로딩 시간이 필요합니다.<br>2. 임시저장목록은 10건 정도 가능합니다.<br>3. 전송 속도를 개선했습니다.<br>4. 최종전송 시 네트워크 상태를 확인 바랍니다.</div>
+        <div class="custom-alert-msg" id="notice-msg" style="text-align: left; font-size: 14px; font-weight: 600; line-height: 1.7;">
+            1. 새로고침시 잠시 기다려 주세요. 데이터가 로딩 시간이 필요합니다.<br>
+            2. 임시저장목록은 10건 정도 가능합니다.<br>
+            3. 전송 속도를 개선했습니다.<br>
+            4. 최종전송 시 네트워크 상태를 확인 바랍니다.
+        </div>
         <button class="custom-alert-btn" onclick="closeNotice()">확인 (오늘 하루 안 보기)</button>
     </div>
 </div>
@@ -118,7 +131,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V8.4</span>
+        <span>(주)METRO R&S 현장관리 시스템 V8.5</span>
     </div>
 </header>
 
@@ -371,7 +384,6 @@
         }
     }
 
-    // 💡 V7.9 워터마크 위치 사양 유지 (왼쪽 하단 밀착)
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
@@ -458,7 +470,6 @@
         if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
     }
 
-    // 💡 [V8.4 핵심 수정] 서버 주도형 PDF 생성 방식 적용
     async function send() {
         if(isProcessingImage) return showMsg("⏳ 아이폰 사진 처리가 진행 중입니다.");
         const d = getD(); if(!currentSid || !d.dong || !d.ho || !d.work) return showMsg("🚨 필수 정보 누락!");
@@ -470,12 +481,10 @@
         document.getElementById('generating-badge').style.display = 'block';
         
         try {
-            // 💡 [V8.4 개선] 클라이언트에서 PDF를 생성하지 않고 사진 원본만 전송
-            // 서버(GAS)가 수신된 데이터를 바탕으로 PDF를 자동 생성하도록 설계됨
             const payload = { 
                 targetSheetId: currentSid, 
                 record: d, 
-                pdfBase64: "", // 서버 사이드 생성 방식을 위해 빈 값 전달
+                pdfBase64: "", 
                 p1Base64: (d.p1||"").split(',')[1]||"", 
                 p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", 
                 p2Base64: (d.p2||"").split(',')[1]||"", 
@@ -493,7 +502,8 @@
             document.getElementById('generating-badge').style.display = 'none';
             
             if(result.result==='success') { 
-                showMsg("🎉 성공적으로 전송되었습니다!\n(사진대지는 서버에서 자동 생성 중입니다)"); 
+                // 💡 [V8.5 수정] 성공 메시지 간소화
+                showMsg("🎉 성공적으로 전송되었습니다!"); 
                 if (editingIndex > -1) { 
                     savedList.splice(editingIndex, 1); 
                     localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
