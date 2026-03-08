@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>(주)METRO R&S 현장관리 시스템 V5.7</title>
+    <title>(주)METRO R&S 현장관리 시스템 V5.8</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -119,7 +119,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V5.7</span>
+        <span>(주)METRO R&S 현장관리 시스템 V5.8</span>
     </div>
 </header>
 
@@ -355,7 +355,6 @@
             if(j.result==='success') {
                 cloudDB = j.data; d.innerHTML = '<option value="">📑 공종 선택</option>';
                 Object.keys(cloudDB).forEach(n => {
-                    // 💡 [수정] "작업기록" 뿐만 아니라 "전체_공정_마스터"도 목록에서 제외합니다.
                     if (n !== "작업기록" && n !== "전체_공정_마스터") d.innerHTML += `<option value="${n}">${n}</option>`;
                 });
             }
@@ -417,7 +416,7 @@
                         if(w > h) { if(w > max) { h *= max/w; w = max; } } 
                         else { if(h > max) { w *= max/h; h = max; } }
                         c.width = w; c.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        document.getElementById(pId).src = c.toDataURL('image/jpeg', 0.6); 
+                        document.getElementById(pId).src = c.toDataURL('image/jpeg', 0.8); 
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } 
