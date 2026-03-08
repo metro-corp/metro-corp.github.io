@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V7.2</title>
+    <title>(주)METRO R&S 현장관리 시스템 V7.3</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -105,7 +105,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V7.2</span>
+        <span>(주)METRO R&S 현장관리 시스템 V7.3</span>
     </div>
 </header>
 
@@ -248,7 +248,7 @@
     function closeAlert() { const alertEl = document.getElementById('custom-alert'); alertEl.classList.remove('show'); setTimeout(() => alertEl.style.display = 'none', 200); }
 
     window.onload = async () => { 
-        // 💡 자정 기준 오늘 날짜 갱신 (로컬 타임 추출)
+        // 💡 자정 기준 오늘 날짜 갱신
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -267,16 +267,8 @@
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
             let d = JSON.parse(auto);
-            if(d.ho === "-") { document.querySelector('input[name="area-type"][value="common"]').checked = true; } else { document.querySelector('input[name="area-type"][value="private"]').checked = true; }
-            toggleArea();
-            ['date','dong','ho','loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id) && d[id]) document.getElementById(id).value = d[id]; });
-            [1,2,3].forEach(i => {
-                if(d['p'+i] && d['p'+i].length > 100) {
-                    let imgEl = document.getElementById('p'+i); imgEl.src = d['p'+i]; imgEl.dataset.raw = d['p'+i+'_raw'] || ""; 
-                    imgEl.dataset.wm = d['p'+i+'_wm'] !== undefined ? d['p'+i+'_wm'] : "true"; imgEl.style.display = 'block'; document.getElementById('t'+i).style.display = 'none';
-                }
-            });
             
+            // 💡 [V7.3 핵심 수정] 새로고침 시 현장명과 공종 세션만 복구함 (나머지 필드는 초기화 유지)
             if(d.sid) { 
                 document.getElementById('site-select').value = d.sid; currentSid = d.sid; 
                 if(d.site) document.getElementById('site').value = d.site; 
@@ -285,7 +277,6 @@
                     const dbSheet = document.getElementById('db-sheet');
                     dbSheet.innerHTML = d.sheetList.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
                 }
-                
                 if(d.workSheet) document.getElementById('db-sheet').value = d.workSheet; 
             }
         }
@@ -391,23 +382,19 @@
         }
     }
 
-    // 💡 [V7.2 최종 복구] 격자형 표 스타일 워터마크 (image_8f249f.png 완벽 재현)
+    // 💡 [디자인 원복] 격자형 표 스타일 워터마크
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
         const totalH = rowH * 5;
         const x = 20, y = h - totalH - 20;
 
-        // 배경 상자
         ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
         ctx.fillRect(x, y, boxW, totalH);
-
-        // 테두리 및 그리드 라인
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(x, y, boxW, totalH);
 
-        // 가로선 4줄
         for (let i = 1; i < 5; i++) {
             ctx.beginPath();
             ctx.moveTo(x, y + (i * rowH));
@@ -415,7 +402,6 @@
             ctx.stroke();
         }
 
-        // 세로선 1줄
         ctx.beginPath();
         ctx.moveTo(x + col1W, y);
         ctx.lineTo(x + col1W, y + totalH);
@@ -423,23 +409,15 @@
 
         const d = getD();
         const labels = ["현 장", "위 치", "내 용", "공 종", "일 자"];
-        const values = [
-            d.site || "현장명",
-            (d.ho === "-" ? d.dong : `${d.dong}동 ${d.ho}호`) || "위치",
-            (d.desc.substring(0, 24) + (d.desc.length > 24 ? "..." : "")) || "작업내용",
-            d.work || "공종",
-            d.date || "날짜"
-        ];
+        const values = [d.site || "현장명", (d.ho === "-" ? d.dong : `${d.dong}동 ${d.ho}호`) || "위치", (d.desc.substring(0, 24) + (d.desc.length > 24 ? "..." : "")) || "작업내용", d.work || "공종", d.date || "날짜"];
 
         ctx.fillStyle = "#000";
         ctx.font = "bold 18px sans-serif";
         ctx.textBaseline = "middle";
 
         labels.forEach((lbl, i) => {
-            // 레이블 영역 (중앙 정렬)
             ctx.textAlign = "center";
             ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
-            // 데이터 영역 (왼쪽 정렬)
             ctx.textAlign = "left";
             ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
         });
@@ -452,10 +430,16 @@
     function saveLocal() {
         if(isProcessingImage) return showMsg("⏳ 아이폰 사진 처리가 진행 중입니다.");
         const d = getD(); if(!currentSid || !d.dong || !d.ho || !d.work) return showMsg("🚨 필수 정보를 입력하세요.");
-        if (editingIndex > -1) { savedList[editingIndex] = d; } else { savedList.push(d); }
+        
+        // 💡 [V7.3 개선] 저장 후 편집 모드 해제 로직 강화
+        if (editingIndex > -1) { 
+            savedList[editingIndex] = d; 
+        } else { 
+            savedList.push(d); 
+        }
         localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
         updateTable(); 
-        clearInputs(true); // 💡 V7.2 핵심: 수정 저장 후 즉시 세션 동기화 및 필드 비움
+        clearInputs(true); 
     }
 
     function updateTable() {
@@ -479,7 +463,6 @@
     async function loadLocal(i) {
         const d = savedList[i]; editingIndex = i;
         if (d.sid) {
-            // 현장이 다를 때만 로딩 대기, 같으면 즉시 처리
             if (d.sid !== currentSid) {
                 document.getElementById('site-select').value = d.sid;
                 currentSid = d.sid;
@@ -505,9 +488,8 @@
 
     function delLocal(i) { savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); if (editingIndex === i) clearInputs(true); else if (editingIndex > i) editingIndex--; updateTable(); }
 
-    // 💡 [V7.2 개선] 저장 후 세션 유지 및 데이터 초기화 (새로고침 초기화 버그 해결)
+    // 💡 [V7.3 개선] 저장 후 세션 유지 및 필드 즉시 초기화
     function clearInputs(isSaveLocal) { 
-        // 1. 공종을 제외한 입력 필드만 비움
         ['dong','ho','loc','type','contractor','desc'].forEach(id => { 
             if(document.getElementById(id)) document.getElementById(id).value=''; 
         }); 
@@ -515,19 +497,16 @@
         document.querySelector('input[name="area-type"][value="private"]').checked = true; 
         toggleArea();
 
-        // 2. 사진 데이터 완벽 삭제
         [1,2,3].forEach(i => { 
             let el = document.getElementById('p'+i); 
             el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; 
             document.getElementById('t'+i).style.display='block'; 
         }); 
 
-        // 3. 편집 모드 해제
         editingIndex = -1; 
         document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
         
-        // 4. [핵심] 현장/공종 세션은 유지한 채 빈 데이터로 autoSave 즉시 갱신
-        // 이렇게 해야 새로고침 시 비워진 필드가 유지됩니다.
+        // 💡 [V7.3 핵심] 현장/공종 세션만 남기고 autoSave 즉시 갱신하여 새로고침 시 빈 필드로 유지되게 함
         if(isSaveLocal) { 
             autoSave(); 
         } else { 
