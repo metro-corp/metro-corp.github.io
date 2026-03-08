@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V7.0</title>
+    <title>(주)METRO R&S 현장관리 시스템 V7.1</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -105,7 +105,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V7.0</span>
+        <span>(주)METRO R&S 현장관리 시스템 V7.1</span>
     </div>
 </header>
 
@@ -231,7 +231,7 @@
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
     let editingIndex = -1; let isProcessingImage = false; 
-    let isInitialLoad = true; // 💡 [V7.0 핵심] 초기 로딩 보호 플래그
+    let isInitialLoad = true; 
 
     function toggleArea() {
         const type = document.querySelector('input[name="area-type"]:checked').value;
@@ -248,7 +248,6 @@
     function closeAlert() { const alertEl = document.getElementById('custom-alert'); alertEl.classList.remove('show'); setTimeout(() => alertEl.style.display = 'none', 200); }
 
     window.onload = async () => { 
-        // 1. 자정 기준 오늘 날짜 갱신
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -257,7 +256,6 @@
         
         let list = localStorage.getItem('metro_savedList'); if(list) { savedList = JSON.parse(list); updateTable(); }
         
-        // 2. 💡 [V7.0 개선] 저장된 현장 목록 캐시 즉시 복구 (로딩 0초 구현)
         const cachedSites = localStorage.getItem('metro_sites');
         if(cachedSites) {
             const s = document.getElementById('site-select');
@@ -265,7 +263,6 @@
             JSON.parse(cachedSites).forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`);
         }
 
-        // 3. 💡 [V7.0 개선] 세션 정보 즉시 복구 (새로고침 초기화 방지)
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
             let d = JSON.parse(auto);
@@ -283,7 +280,6 @@
                 document.getElementById('site-select').value = d.sid; currentSid = d.sid; 
                 if(d.site) document.getElementById('site').value = d.site; 
                 
-                // 💡 [V7.0 개선] 저장된 공종 목록 즉시 복구
                 if(d.sheetList) {
                     const dbSheet = document.getElementById('db-sheet');
                     dbSheet.innerHTML = d.sheetList.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
@@ -293,11 +289,9 @@
             }
         }
 
-        // 4. 비하인드에서 최신 정보 동기화
         await getSites(); 
         if(currentSid) await loadDB();
 
-        // 5. 💡 모든 복구 완료 후 자동 저장 기능 활성화
         isInitialLoad = false; 
         document.querySelectorAll('input, select, textarea').forEach(el => { 
             el.addEventListener('input', autoSave); 
@@ -305,13 +299,11 @@
         });
     };
 
-    // 💡 [V7.0 개선] 초기 로딩 중에는 저장을 중단하여 데이터 오염 방지
     function autoSave() { 
         if(isInitialLoad) return; 
         let d = getD(); 
         d.sid = currentSid; 
         d.workSheet = document.getElementById('db-sheet').value; 
-        // 💡 [V7.0 개선] 공종 목록(sheetList)도 함께 저장하여 다음 로딩 시 즉시 복구 가능하게 함
         d.sheetList = Array.from(document.getElementById('db-sheet').options).map(o => ({value: o.value, text: o.text}));
         try { localStorage.setItem('metro_autoSave', JSON.stringify(d)); } catch(e) {} 
     }
@@ -322,7 +314,6 @@
             const r = await fetch(`${MY_GAS_URL}?mode=getSites&t=${new Date().getTime()}`);
             const j = await r.json();
             if(j.result==='success') { 
-                // 💡 최신 현장 목록을 다시 캐시에 저장
                 localStorage.setItem('metro_sites', JSON.stringify(j.sites));
                 s.innerHTML = `<option value="">🏢 현장을 선택해주세요</option>`; 
                 j.sites.forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`); 
@@ -336,7 +327,6 @@
         const selectText = s.options[s.selectedIndex].text;
         document.getElementById('site').value = selectText;
         
-        // 💡 초기 로딩 중이 아닐 때만 "로딩 중" 메시지 표시 (화면 깜빡임 방지)
         const d = document.getElementById('db-sheet'); 
         const currentVal = d.value;
         if(!isInitialLoad) d.innerHTML = '<option value="">⏳ 로딩 중...</option>';
@@ -348,7 +338,7 @@
                 cloudDB = j.data; d.innerHTML = '<option value="">📑 공종 선택</option>';
                 Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "전체_공정_마스터" && n !== "전체_공정마스터") d.innerHTML += `<option value="${n}">${n}</option>`; });
                 if(currentVal) d.value = currentVal;
-                autoSave(); // 최신 목록 정보 업데이트
+                autoSave(); 
             }
         } catch(e) { d.innerHTML = '<option value="">❌ 실패</option>'; }
     }
@@ -400,7 +390,6 @@
         }
     }
 
-    // 💡 워터마크 디자인 정교화 고정 (V6.9 사양 계승)
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 120;
@@ -483,12 +472,34 @@
 
     function delLocal(i) { savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); if (editingIndex === i) clearInputs(true); else if (editingIndex > i) editingIndex--; updateTable(); }
 
+    // 💡 [V7.1 개선] 저장 후 세션 유지 및 데이터 초기화 로직
     function clearInputs(isSaveLocal) { 
-        ['dong','ho','loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
-        document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
-        [1,2,3].forEach(i => { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }); 
-        editingIndex = -1; document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
-        if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
+        // 1. 공종(work)을 제외한 나머지 필드만 비움
+        ['dong','ho','loc','type','contractor','desc'].forEach(id => { 
+            if(document.getElementById(id)) document.getElementById(id).value=''; 
+        }); 
+        
+        // 2. 세대 입력을 기본값으로 리셋
+        document.querySelector('input[name="area-type"][value="private"]').checked = true; 
+        toggleArea();
+
+        // 3. 사진 데이터 완벽 삭제
+        [1,2,3].forEach(i => { 
+            let el = document.getElementById('p'+i); 
+            el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; 
+            document.getElementById('t'+i).style.display='block'; 
+        }); 
+
+        // 4. 편집 모드 해제 및 버튼 명칭 리셋
+        editingIndex = -1; 
+        document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
+        
+        // 5. [핵심] 현장/공종 세션 정보를 포함하여 autoSave 업데이트 (새로고침 시 빈 필드로 유지되게 함)
+        if(isSaveLocal) { 
+            autoSave(); 
+        } else { 
+            localStorage.removeItem('metro_autoSave'); 
+        }
     }
 
     async function send() {
