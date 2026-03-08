@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V8.3</title>
+    <title>(주)METRO R&S 현장관리 시스템 V8.4</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -17,13 +17,14 @@
     </script>
 
     <meta property="og:title" content="(주)METRO R&S 현장관리 시스템">
-    <meta property="og:description" content="현장 사진 촬영부터 PDF 사진대지 자동 생성, 구글 드라이브 분류까지 한 번에 처리하는 통합 솔루션">
+    <meta property="og:description" content="현장 사진 촬영부터 사진대지 자동 생성, 구글 드라이브 분류까지 한 번에 처리하는 통합 솔루션">
     <meta property="og:image" content="https://metro-corp.github.io/og-image.png">
     
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="shortcut icon" href="logo.png">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- 💡 [V8.4 수정] 클라이언트 PDF 생성 라이브러리 제거 (속도 및 용량 최적화) -->
+    
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         
@@ -36,6 +37,7 @@
 
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--bg-body); font-size: 15px; color: var(--text-main); padding-bottom: 60px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
         
+        /* 💡 V8.2 상단 고정 해제 사양 유지 */
         header { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: white; padding: 18px; font-weight: 700; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 17px; }
         
         .container { padding: 15px; max-width: 800px; margin: auto; }
@@ -79,22 +81,10 @@
         th:first-child { border-top-left-radius: 12px; } th:last-child { border-top-right-radius: 12px; }
         tr:last-child td { border-bottom: none; }
         
+        /* 💡 V5.7 디자인 복구 사양 유지 */
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
 
-        #pdf-template { 
-            display: none; 
-            width: 794px; 
-            height: 1122px; 
-            padding: 40px; 
-            background: white; 
-            font-family: 'Malgun Gothic', sans-serif; 
-            box-sizing: border-box; 
-            margin: 0 auto; 
-            overflow: hidden; 
-            position: relative;
-        }
-        
         #generating-badge { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 16px; white-space: nowrap; }
 
         #custom-alert, #notice-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10005; backdrop-filter: blur(3px); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.2s ease; }
@@ -109,12 +99,12 @@
 
 <div id="custom-alert">
     <div class="custom-alert-box">
-        <div class="custom-alert-msg" id="alert-msg">메세지</div>
+        <div class="custom-alert-msg" id="alert-msg">메시지 내용</div>
         <button class="custom-alert-btn" onclick="closeAlert()">확인</button>
     </div>
 </div>
 
-<!-- 💡 [V8.3 추가] 공지사항 모달 구조 -->
+<!-- 💡 V8.3 공지사항 로직 유지 -->
 <div id="notice-modal">
     <div class="custom-alert-box">
         <div style="background: var(--accent); color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -25px -20px 20px; font-weight: 900; font-size: 15px; letter-spacing: 1px;">📢 공지사항</div>
@@ -123,12 +113,12 @@
     </div>
 </div>
 
-<div id="generating-badge">⏳ 문서 생성 및 전송 중...</div>
+<div id="generating-badge">🚀 전송 중...</div>
 
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V8.3</span>
+        <span>(주)METRO R&S 현장관리 시스템 V8.4</span>
     </div>
 </header>
 
@@ -207,49 +197,6 @@
     </div>
 </div>
 
-<!-- PDF 템플릿 (하단 잘림 방지 최적화) -->
-<div id="pdf-template">
-    <p style="text-align: center; font-size: 26px; font-weight: 900; margin-top: 0; margin-bottom: 20px; letter-spacing: 15px; font-family: 'Malgun Gothic', sans-serif;">사 진 대 지</p>
-    <table style="width:100%; border-collapse:collapse; border:2px solid #000; font-size:14px; table-layout: fixed;">
-        <tr style="height: 38px;">
-            <td style="border:1px solid #000; padding:8px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">현장명</td>
-            <td id="pdf-site" colspan="3" style="border:1px solid #000; padding:8px; text-align:center; font-weight:bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;"></td>
-        </tr>
-        <tr style="height: 38px;">
-            <td id="pdf-unit-label" style="border:1px solid #000; padding:8px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">동/호</td>
-            <td id="pdf-unit" style="border:1px solid #000; padding:8px; width:35%; text-align:left;"></td>
-            <td style="border:1px solid #000; padding:8px; background:#f4f4f4; font-weight:bold; width:15%; text-align:center;">위치</td>
-            <td id="pdf-loc" style="border:1px solid #000; padding:8px; width:35%; text-align:left;"></td>
-        </tr>
-        <tr style="height: 38px;">
-            <td id="pdf-work-label" style="border:1px solid #000; padding:8px; background:#f4f4f4; font-weight:bold; text-align:center;">공종</td>
-            <td id="pdf-work" style="border:1px solid #000; padding:8px; text-align:left;"></td>
-            <td style="border:1px solid #000; padding:8px; background:#f4f4f4; font-weight:bold; text-align:center;">시공업체</td>
-            <td id="pdf-contractor" style="border:1px solid #000; padding:8px; text-align:left;"></td>
-        </tr>
-        <tr style="height: 38px;">
-            <td style="border:1px solid #000; padding:8px; background:#f4f4f4; font-weight:bold; text-align:center;">일자</td>
-            <td id="pdf-date" colspan="3" style="border:1px solid #000; padding:8px; text-align:left;"></td>
-        </tr>
-        <tr style="height: 55px;">
-            <td style="border:1px solid #000; padding:8px; background:#f4f4f4; font-weight:bold; text-align:center;">내용</td>
-            <td id="pdf-desc" colspan="3" style="border:1px solid #000; padding:8px; vertical-align:top; height:55px; word-break: break-all;"></td>
-        </tr>
-        <tr>
-            <td colspan="4" style="border:1px solid #000; padding: 12px 0; text-align: center; vertical-align: middle; height: 340px;">
-                <p style="font-weight:900; margin-top:0; margin-bottom:8px; font-size:16px;">[ 작 업 전 ]</p>
-                <img id="pdf-p1" style="width:480px; height:290px; object-fit:contain; display:block; margin:0 auto;">
-            </td>
-        </tr>
-        <tr>
-            <td colspan="4" style="border:1px solid #000; padding: 12px 0; text-align: center; vertical-align: middle; height: 340px;">
-                <p style="font-weight:900; margin-top:0; margin-bottom:8px; font-size:16px;">[ 작 업 후 ]</p>
-                <img id="pdf-p2" style="width:480px; height:290px; object-fit:contain; display:block; margin:0 auto;">
-            </td>
-        </tr>
-    </table>
-</div>
-
 <script>
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyE1jMEzrix8xYu3_lgHUX8Oqm6TAtWP6RDZzZ2WFL9c6Crlz5BFTO7__JoFygqRwUD/exec"; 
     
@@ -271,7 +218,6 @@
     function showMsg(msg) { document.getElementById('alert-msg').innerText = msg; const alertEl = document.getElementById('custom-alert'); alertEl.style.display = 'flex'; setTimeout(() => alertEl.classList.add('show'), 10); }
     function closeAlert() { const alertEl = document.getElementById('custom-alert'); alertEl.classList.remove('show'); setTimeout(() => alertEl.style.display = 'none', 200); }
 
-    // 💡 [V8.3 추가] 공지사항 관리 함수
     function checkNotice() {
         const lastDate = localStorage.getItem('metro_notice_date');
         const today = new Date().toISOString().split('T')[0];
@@ -329,7 +275,6 @@
             el.addEventListener('change', autoSave); 
         });
 
-        // 💡 [V8.3 추가] 로딩 완료 후 공지사항 체크
         checkNotice();
     };
 
@@ -426,6 +371,7 @@
         }
     }
 
+    // 💡 V7.9 워터마크 위치 사양 유지 (왼쪽 하단 밀착)
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
@@ -448,10 +394,8 @@
         const values = [d.site || "현장명", (d.ho === "-" ? d.dong : `${d.dong}동 ${d.ho}호`) || "위치", (d.desc.substring(0, 24) + (d.desc.length > 24 ? "..." : "")) || "작업내용", d.work || "공종", d.date || "날짜"];
         ctx.fillStyle = "#000"; ctx.font = "bold 18px sans-serif"; ctx.textBaseline = "middle";
         labels.forEach((lbl, i) => {
-            ctx.textAlign = "center";
-            ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
-            ctx.textAlign = "left";
-            ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
+            ctx.textAlign = "center"; ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
+            ctx.textAlign = "left"; ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
         });
         return c.toDataURL('image/jpeg', 0.7);
     }
@@ -514,36 +458,58 @@
         if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
     }
 
+    // 💡 [V8.4 핵심 수정] 서버 주도형 PDF 생성 방식 적용
     async function send() {
         if(isProcessingImage) return showMsg("⏳ 아이폰 사진 처리가 진행 중입니다.");
-        const d_init = getD(); if(!currentSid || !d_init.dong || !d_init.ho || !d_init.work) return showMsg("🚨 필수 정보 누락!");
-        const btn = document.getElementById('btn-send'); btn.innerHTML = "⏳ 준비 중..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
-        document.querySelector('.container').style.display = 'none'; document.querySelector('header').style.display = 'none'; document.getElementById('generating-badge').style.display = 'block';
+        const d = getD(); if(!currentSid || !d.dong || !d.ho || !d.work) return showMsg("🚨 필수 정보 누락!");
+        
+        const btn = document.getElementById('btn-send'); 
+        btn.innerHTML = "⏳ 전송 중..."; 
+        btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
+        
+        document.getElementById('generating-badge').style.display = 'block';
+        
         try {
-            const d = getD(); let hasPhotos = (d.p1 && d.p1.length > 100) || (d.p2 && d.p2.length > 100); let pdfBase64Data = "";
-            if (hasPhotos) {
-                document.getElementById('pdf-site').innerText = d.site; document.getElementById('pdf-unit').innerText = (d.ho === "-") ? d.dong : `${d.dong}동 ${d.ho}호`;
-                document.getElementById('pdf-loc').innerText = d.loc; document.getElementById('pdf-work').innerText = d.work; document.getElementById('pdf-contractor').innerText = d.contractor; document.getElementById('pdf-date').innerText = d.date; document.getElementById('pdf-desc').innerText = d.desc; document.getElementById('pdf-p1').src = d.p1 || ""; document.getElementById('pdf-p2').src = d.p2 || "";
-                const el = document.getElementById('pdf-template'); el.style.display = 'block'; await new Promise(resolve => setTimeout(resolve, 600)); 
-                
-                const pdf = await html2pdf().set({ 
-                    margin: 0, 
-                    html2canvas: { scale: 2, useCORS: true, windowWidth: 794 }, 
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-                }).from(el).output('datauristring');
-                
-                el.style.display = 'none'; pdfBase64Data = pdf.split(',')[1];
+            // 💡 [V8.4 개선] 클라이언트에서 PDF를 생성하지 않고 사진 원본만 전송
+            // 서버(GAS)가 수신된 데이터를 바탕으로 PDF를 자동 생성하도록 설계됨
+            const payload = { 
+                targetSheetId: currentSid, 
+                record: d, 
+                pdfBase64: "", // 서버 사이드 생성 방식을 위해 빈 값 전달
+                p1Base64: (d.p1||"").split(',')[1]||"", 
+                p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", 
+                p2Base64: (d.p2||"").split(',')[1]||"", 
+                p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", 
+                p3Base64: (d.p3||"").split(',')[1]||"" 
+            };
+
+            const response = await fetch(MY_GAS_URL, { 
+                method: 'POST', 
+                body: JSON.stringify(payload) 
+            }); 
+            
+            const result = await response.json();
+            
+            document.getElementById('generating-badge').style.display = 'none';
+            
+            if(result.result==='success') { 
+                showMsg("🎉 성공적으로 전송되었습니다!\n(사진대지는 서버에서 자동 생성 중입니다)"); 
+                if (editingIndex > -1) { 
+                    savedList.splice(editingIndex, 1); 
+                    localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
+                }
+                clearInputs(true); 
+                updateTable(); 
+            } else { 
+                showMsg("❌ 서버 오류: " + result.message); 
             }
-            const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdfBase64Data, p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", p3Base64: (d.p3||"").split(',')[1]||"" };
-            const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); const j = await r.json();
-            document.querySelector('.container').style.display = 'block'; document.querySelector('header').style.display = 'block'; document.getElementById('generating-badge').style.display = 'none';
-            if(j.result==='success') { 
-                showMsg("🎉 성공적으로 전송되었습니다!"); 
-                if (editingIndex > -1) { savedList.splice(editingIndex, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); }
-                clearInputs(true); updateTable(); 
-            } else { showMsg("❌ 서버 오류: " + j.message); }
-        } catch(e) { showMsg("❌ 전송 실패"); }
-        finally { btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; }
+        } catch(e) { 
+            document.getElementById('generating-badge').style.display = 'none';
+            showMsg("❌ 전송 실패: 네트워크 상태를 확인하세요."); 
+        } finally { 
+            btn.innerHTML = "🚀 최종 전송"; 
+            btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
+        }
     }
 </script>
 </body>
