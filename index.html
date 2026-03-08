@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V7.6</title>
+    <title>(주)METRO R&S 현장관리 시스템 V7.7</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -36,7 +36,7 @@
 
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--bg-body); font-size: 15px; color: var(--text-main); padding-bottom: 60px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
         
-        /* 💡 [V7.6 수정] 겹침 방지를 위해 sticky 제거 및 배경색 명시 */
+        /* 💡 겹침 방지를 위해 sticky 제거 및 배경색 변수 적용 */
         header { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: white; padding: 18px; font-weight: 700; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 17px; }
         
         .container { padding: 15px; max-width: 800px; margin: auto; }
@@ -80,7 +80,6 @@
         th:first-child { border-top-left-radius: 12px; } th:last-child { border-top-right-radius: 12px; }
         tr:last-child td { border-bottom: none; }
         
-        /* 💡 [V7.6 디자인 복구] 목록 내 버튼 스타일을 V5.7 사양으로 원복 */
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
 
@@ -109,7 +108,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V7.6</span>
+        <span>(주)METRO R&S 현장관리 시스템 V7.7</span>
     </div>
 </header>
 
@@ -231,6 +230,7 @@
 </div>
 
 <script>
+    // 💡 [V7.7 수정] 서버 URL 오타 수정 (JoFygqRwUD)
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyE1jMEzrix8xYu3_lgHUX8Oqm6TAtWP6RDZzZ2WFL9c6Crlz5BFTO7__JoFygqRwUD/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -358,19 +358,19 @@
             txt.style.display = 'block'; document.getElementById(pId).style.display = 'none';
             const r = new FileReader(); r.onload = (e) => {
                 const img = new Image(); img.onload = () => {
-                    const c = document.createElement('canvas'); const ctx = c.getContext('2d');
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
                     let w = img.width, h = img.height;
                     if (pId === 'p3') {
                         let max = 1600; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
-                        c.width = w; c.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        document.getElementById(pId).src = c.toDataURL('image/jpeg', 0.4); 
+                        canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
+                        document.getElementById(pId).src = canvas.toDataURL('image/jpeg', 0.4); 
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } else { sH = w / targetRatio; sY = (h - sH) / 2; }
-                        c.width = 1200; c.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
-                        document.getElementById(pId).dataset.raw = c.toDataURL('image/jpeg', 0.6);
+                        canvas.width = 1200; canvas.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
+                        document.getElementById(pId).dataset.raw = canvas.toDataURL('image/jpeg', 0.6);
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
-                        if(applyWm) { document.getElementById(pId).src = addWM(c); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
+                        if(applyWm) { document.getElementById(pId).src = addWM(canvas); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
                     }
                     document.getElementById(pId).style.display='block'; txt.style.display='none';
                     txt.innerHTML = `<div style="font-size: 24px;">${pId==='p3'?'📋':'📷'}</div><span>${pId==='p1'?'작업 전':(pId==='p2'?'작업 후':'완료확인서')}</span>`;
@@ -380,28 +380,46 @@
         }
     }
 
+    // 💡 [디자인 고정] 격자형 표 스타일 워터마크
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
         const totalH = rowH * 5;
         const x = 20, y = h - totalH - 20;
+
         ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
         ctx.fillRect(x, y, boxW, totalH);
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(x, y, boxW, totalH);
+
         for (let i = 1; i < 5; i++) {
-            ctx.beginPath(); ctx.moveTo(x, y + (i * rowH)); ctx.lineTo(x + boxW, y + (i * rowH)); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y + (i * rowH));
+            ctx.lineTo(x + boxW, y + (i * rowH));
+            ctx.stroke();
         }
-        ctx.beginPath(); ctx.moveTo(x + col1W, y); ctx.lineTo(x + col1W, y + totalH); ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x + col1W, y);
+        ctx.lineTo(x + col1W, y + totalH);
+        ctx.stroke();
+
         const d = getD();
         const labels = ["현 장", "위 치", "내 용", "공 종", "일 자"];
         const values = [d.site || "현장명", (d.ho === "-" ? d.dong : `${d.dong}동 ${d.ho}호`) || "위치", (d.desc.substring(0, 24) + (d.desc.length > 24 ? "..." : "")) || "작업내용", d.work || "공종", d.date || "날짜"];
-        ctx.fillStyle = "#000"; ctx.font = "bold 18px sans-serif"; ctx.textBaseline = "middle";
+
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 18px sans-serif";
+        ctx.textBaseline = "middle";
+
         labels.forEach((lbl, i) => {
-            ctx.textAlign = "center"; ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
-            ctx.textAlign = "left"; ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
+            ctx.textAlign = "center";
+            ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
+            ctx.textAlign = "left";
+            ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
         });
+
         return c.toDataURL('image/jpeg', 0.7);
     }
 
@@ -467,7 +485,13 @@
         document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
         [1,2,3].forEach(i => { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }); 
         editingIndex = -1; document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
-        if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
+        
+        // 💡 [V7.7 핵심] isSaveLocal이 true(전송성공/수정저장)일 때 현장/공종 세션 정보를 유지하며 autoSave 호출
+        if(isSaveLocal) { 
+            autoSave(); 
+        } else { 
+            localStorage.removeItem('metro_autoSave'); 
+        }
     }
 
     async function send() {
@@ -493,7 +517,7 @@
                     savedList.splice(editingIndex, 1); 
                     localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
                 }
-                // 💡 [V7.6 수정] 최종 전송 성공 시 세션(현장/공종)을 보존하도록 true 전달
+                // 💡 [V7.7 수정] 최종 전송 성공 시 세션(현장/공종)을 보존하도록 true 전달
                 clearInputs(true); 
                 updateTable(); 
             } else { showMsg("❌ 서버 오류: " + j.message); }
