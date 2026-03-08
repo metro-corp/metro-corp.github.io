@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V6.5</title>
+    <title>(주)METRO R&S 현장관리 시스템 V6.6</title>
     
-    <!-- 카카오톡 내부 브라우저 차단 및 외부 브라우저 유도 -->
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
         if (userAgent.indexOf("kakaotalk") !== -1) {
@@ -24,7 +23,6 @@
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="shortcut icon" href="logo.png">
 
-    <!-- 외부 라이브러리: PDF 생성 엔진 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -79,15 +77,12 @@
         th:first-child { border-top-left-radius: 12px; } th:last-child { border-top-right-radius: 12px; }
         tr:last-child td { border-bottom: none; }
         
-        /* 임시 저장 목록 원본 버튼 스타일 */
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
 
-        /* PDF 템플릿 */
         #pdf-template { display: none; width: 794px; height: 1122px; padding: 40px 40px 80px 40px; background: white; font-family: 'Malgun Gothic', sans-serif; box-sizing: border-box; margin: 0 auto; }
         #generating-badge { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 16px; white-space: nowrap; }
 
-        /* 커스텀 메시지 박스 */
         #custom-alert { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10005; backdrop-filter: blur(3px); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.2s ease; }
         #custom-alert.show { display: flex; opacity: 1; }
         .custom-alert-box { background: white; padding: 25px 20px 20px; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); max-width: 320px; width: 100%; transform: translateY(20px) scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -110,7 +105,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V6.5</span>
+        <span>(주)METRO R&S 현장관리 시스템 V6.6</span>
     </div>
 </header>
 
@@ -126,7 +121,6 @@
         <div class="section-title"><span>2</span> 작업 정보 입력</div>
         <div class="grid">
             <input type="date" id="today-date" class="full">
-            <!-- 💡 공종 선택 시 즉시 자동 저장 트리거 추가 -->
             <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full"><option value="">현장을 먼저 선택해주세요</option></select>
             
             <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
@@ -181,7 +175,6 @@
         </div>
     </div>
 
-    <!-- 임시 저장 목록 (V5.7 원본 레이아웃 및 디자인 고수) -->
     <div class="section">
         <div class="section-title"><span>목록</span> 임시 저장 내역 (<span id="count" style="color:var(--accent);">0</span>건)</div>
         <table>
@@ -254,7 +247,6 @@
     function closeAlert() { const alertEl = document.getElementById('custom-alert'); alertEl.classList.remove('show'); setTimeout(() => alertEl.style.display = 'none', 200); }
 
     window.onload = async () => { 
-        // 💡 [수정] 한국 시간(KST) 기반 자정 날짜 갱신 로직 (현지 시간 직접 추출)
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -284,6 +276,7 @@
                 if(d.workSheet) document.getElementById('db-sheet').value = d.workSheet; 
             }
         }
+        // 💡 중요: 초기 로딩 완료 후 리스너 부착
         document.querySelectorAll('input, select, textarea').forEach(el => { el.addEventListener('input', autoSave); el.addEventListener('change', autoSave); });
     };
 
@@ -307,9 +300,8 @@
             const j = await r.json();
             if(j.result==='success') {
                 cloudDB = j.data; d.innerHTML = '<option value="">📑 공종 선택</option>';
-                // 💡 [수정] 사용자 사진에서 확인된 마스터 시트들 필터링
                 Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "전체_공정_마스터" && n !== "전체_공정마스터") d.innerHTML += `<option value="${n}">${n}</option>`; });
-                autoSave(); 
+                // 💡 [수정] loadDB 내부에서의 autoSave() 호출 제거 (초기화 버그 해결책)
             }
         } catch(e) { d.innerHTML = '<option value="">❌ 실패</option>'; }
     }
@@ -344,13 +336,11 @@
                     if (pId === 'p3') {
                         let max = 1600; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
                         c.width = w; c.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        // 용량 최적화 (0.4)
                         document.getElementById(pId).src = c.toDataURL('image/jpeg', 0.4); 
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } else { sH = w / targetRatio; sY = (h - sH) / 2; }
                         c.width = 1200; c.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
-                        // 용량 최적화 (0.6)
                         document.getElementById(pId).dataset.raw = c.toDataURL('image/jpeg', 0.6);
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
                         if(applyWm) { document.getElementById(pId).src = addWM(c); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
@@ -375,7 +365,6 @@
         return c.toDataURL('image/jpeg', 0.6);
     }
 
-    // 💡 [데이터 무결성] sid와 workSheet 정보를 함께 패키징하여 저장
     function getD() { return { date: document.getElementById('today-date').value, site: document.getElementById('site').value, sid: currentSid, workSheet: document.getElementById('db-sheet').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value, p1: document.getElementById('p1').src, p1_raw: document.getElementById('p1').dataset.raw || "", p1_wm: document.getElementById('p1').dataset.wm || "true", p2: document.getElementById('p2').src, p2_raw: document.getElementById('p2').dataset.raw || "", p2_wm: document.getElementById('p2').dataset.wm || "true", p3: document.getElementById('p3').src }; }
 
     function saveLocal() {
@@ -385,7 +374,6 @@
         localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); clearInputs(true);
     }
 
-    // 💡 [복구] 사용자 V5.7 원본 디자인 그대로 복구 (버튼 및 레이아웃)
     function updateTable() {
         const b = document.getElementById('list-body');
         b.innerHTML = savedList.length ? savedList.map((r, i) => {
@@ -404,13 +392,12 @@
         document.getElementById('count').innerText = savedList.length;
     }
     
-    // 💡 [불러오기] 비동기 동기화 로직으로 현장/공종 완벽 복구
     async function loadLocal(i) {
         const d = savedList[i]; editingIndex = i;
         if (d.sid) {
             document.getElementById('site-select').value = d.sid;
             currentSid = d.sid;
-            await loadDB(); // 서버 통신 완료까지 대기
+            await loadDB(); 
             if (d.workSheet) { document.getElementById('db-sheet').value = d.workSheet; }
         }
         if(d.ho === "-") { document.querySelector('input[name="area-type"][value="common"]').checked = true; } else { document.querySelector('input[name="area-type"][value="private"]').checked = true; }
@@ -418,14 +405,7 @@
         document.getElementById('today-date').value = d.date; document.getElementById('dong').value = d.dong; document.getElementById('ho').value = d.ho; document.getElementById('loc').value = d.loc; document.getElementById('work').value = d.work; document.getElementById('type').value = d.type; document.getElementById('contractor').value = d.contractor; document.getElementById('desc').value = d.desc;
         [1, 2].forEach(num => {
             const imgEl = document.getElementById('p' + num); const textEl = document.getElementById('t' + num); const imgSrc = d['p' + num];
-            if (imgSrc && imgSrc.length > 100) { 
-                imgEl.src = imgSrc; 
-                imgEl.dataset.raw = d['p' + num + '_raw'] || ""; 
-                imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; 
-                imgEl.style.display = 'block'; textEl.style.display = 'none'; 
-            } else { 
-                imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.dataset.wm = "true"; imgEl.style.display = 'none'; textEl.style.display = 'block'; 
-            }
+            if (imgSrc && imgSrc.length > 100) { imgEl.src = imgSrc; imgEl.dataset.raw = d['p' + num + '_raw'] || ""; imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; imgEl.style.display = 'block'; textEl.style.display = 'none'; } else { imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.dataset.wm = "true"; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
         });
         if (d.p3 && d.p3.length > 100) { document.getElementById('p3').src = d.p3; document.getElementById('p3').style.display = 'block'; document.getElementById('t3').style.display = 'none'; } else { document.getElementById('p3').src = ''; document.getElementById('p3').style.display = 'none'; document.getElementById('t3').style.display = 'block'; }
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; autoSave(); 
@@ -456,7 +436,6 @@
                 const pdf = await html2pdf().set({ margin: 0, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).output('datauristring');
                 el.style.display = 'none'; pdfBase64Data = pdf.split(',')[1];
             }
-            // V6.0 서버 규격 전송
             const payload = { targetSheetId: currentSid, record: d, pdfBase64: pdfBase64Data, p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", p3Base64: (d.p3||"").split(',')[1]||"" };
             const r = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); const j = await r.json();
             document.querySelector('.container').style.display = 'block'; document.querySelector('header').style.display = 'block'; document.getElementById('generating-badge').style.display = 'none';
