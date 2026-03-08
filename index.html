@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V7.7</title>
+    <title>(주)METRO R&S 현장관리 시스템 V7.9</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -35,10 +35,7 @@
         }
 
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--bg-body); font-size: 15px; color: var(--text-main); padding-bottom: 60px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
-        
-        /* 💡 겹침 방지를 위해 sticky 제거 및 배경색 변수 적용 */
         header { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: white; padding: 18px; font-weight: 700; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 17px; }
-        
         .container { padding: 15px; max-width: 800px; margin: auto; }
         .section { background: var(--surface); padding: 24px; border-radius: 20px; margin-bottom: 20px; box-shadow: var(--shadow-soft); border: 1px solid rgba(255,255,255,0.8); }
         .section-title { font-weight: 800; color: var(--primary-dark); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; font-size: 16px; border-bottom: 2px solid var(--border-light); padding-bottom: 12px; }
@@ -108,7 +105,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V7.7</span>
+        <span>(주)METRO R&S 현장관리 시스템 V7.9</span>
     </div>
 </header>
 
@@ -230,7 +227,7 @@
 </div>
 
 <script>
-    // 💡 [V7.7 수정] 서버 URL 오타 수정 (JoFygqRwUD)
+    // 💡 [V7.8 최종 복구] 서버 URL 주소 오타 수정 (JoFygqRwUD)
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyE1jMEzrix8xYu3_lgHUX8Oqm6TAtWP6RDZzZ2WFL9c6Crlz5BFTO7__JoFygqRwUD/exec"; 
     
     let cloudDB = {}; let currentSid = ""; let savedList = [];
@@ -352,7 +349,12 @@
 
     function proc(input, pId, tId) {
         if(input.files && input.files[0]) {
-            let applyWm = confirm("📷 사진에 현장 정보(워터마크)를 추가하시겠습니까?\n\n[확인] 워터마크 표기\n[취소] 원본 사진 유지");
+            // 💡 p3(완료확인서)인 경우 워터마크 선택 팝업 생략
+            let applyWm = false;
+            if (pId !== 'p3') {
+                applyWm = confirm("📷 사진에 현장 정보(워터마크)를 추가하시겠습니까?\n\n[확인] 워터마크 표기\n[취소] 원본 사진 유지");
+            }
+
             isProcessingImage = true; const txt = document.getElementById(tId);
             txt.innerHTML = "<div style='font-size: 24px;'>⏳</div><span>처리중...</span>";
             txt.style.display = 'block'; document.getElementById(pId).style.display = 'none';
@@ -380,12 +382,14 @@
         }
     }
 
-    // 💡 [디자인 고정] 격자형 표 스타일 워터마크
+    // 💡 [V7.9 수정] 워터마크 디자인 및 위치 (왼쪽 하단 여백 0 정밀 고정)
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
         const totalH = rowH * 5;
-        const x = 20, y = h - totalH - 20;
+        
+        // 💡 x, y 좌표를 0과 h - totalH로 설정하여 여백 없이 밀착
+        const x = 0, y = h - totalH;
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
         ctx.fillRect(x, y, boxW, totalH);
@@ -485,13 +489,7 @@
         document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
         [1,2,3].forEach(i => { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }); 
         editingIndex = -1; document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
-        
-        // 💡 [V7.7 핵심] isSaveLocal이 true(전송성공/수정저장)일 때 현장/공종 세션 정보를 유지하며 autoSave 호출
-        if(isSaveLocal) { 
-            autoSave(); 
-        } else { 
-            localStorage.removeItem('metro_autoSave'); 
-        }
+        if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
     }
 
     async function send() {
@@ -517,7 +515,7 @@
                     savedList.splice(editingIndex, 1); 
                     localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
                 }
-                // 💡 [V7.7 수정] 최종 전송 성공 시 세션(현장/공종)을 보존하도록 true 전달
+                // 💡 [V7.8] 전송 성공 후 세션 보존
                 clearInputs(true); 
                 updateTable(); 
             } else { showMsg("❌ 서버 오류: " + j.message); }
