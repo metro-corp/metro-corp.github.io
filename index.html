@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V8.6</title>
+    <!-- 💡 버전 업데이트: V8.7 -->
+    <title>(주)METRO R&S 현장관리 시스템 V8.7</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -34,6 +35,8 @@
         }
 
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--bg-body); font-size: 15px; color: var(--text-main); padding-bottom: 60px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
+        
+        /* 💡 V8.2 수정사항: 겹침 방지를 위해 sticky 제거 */
         header { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: white; padding: 18px; font-weight: 700; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 17px; }
         
         .container { padding: 15px; max-width: 800px; margin: auto; }
@@ -77,6 +80,7 @@
         th:first-child { border-top-left-radius: 12px; } th:last-child { border-top-right-radius: 12px; }
         tr:last-child td { border-bottom: none; }
         
+        /* 💡 V5.7 디자인 복구 사양 유지 */
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
 
@@ -112,6 +116,7 @@
     </div>
 </div>
 
+<!-- 💡 V8.5 공지사항 내용 유지 -->
 <div id="notice-modal">
     <div class="custom-alert-box">
         <div style="background: var(--accent); color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -25px -20px 20px; font-weight: 900; font-size: 15px; letter-spacing: 1px;">📢 공지사항</div>
@@ -130,7 +135,8 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V8.6</span>
+        <!-- 💡 버전 업데이트: V8.7 -->
+        <span>(주)METRO R&S 현장관리 시스템 V8.7</span>
     </div>
 </header>
 
@@ -366,13 +372,13 @@
                     if (pId === 'p3') {
                         let max = 1600; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
                         canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        // 💡 [V8.6 수정] 완료확인서 압축률 강화 (0.4 -> 0.3)
+                        // 💡 V8.6 수정사항: 완료확인서 압축률 강화 (0.3)
                         document.getElementById(pId).src = canvas.toDataURL('image/jpeg', 0.3); 
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } else { sH = w / targetRatio; sY = (h - sH) / 2; }
                         canvas.width = 1200; canvas.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
-                        // 💡 [V8.6 수정] 원본 사진 압축률 강화 (0.6 -> 0.4)
+                        // 💡 V8.6 수정사항: 원본 사진 압축률 강화 (0.4)
                         document.getElementById(pId).dataset.raw = canvas.toDataURL('image/jpeg', 0.4);
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
                         if(applyWm) { document.getElementById(pId).src = addWM(canvas); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
@@ -385,7 +391,7 @@
         }
     }
 
-    // 💡 워터마크 디자인 및 위치 (왼쪽 하단 여백 0 완전 밀착)
+    // 💡 V7.9 수정사항: 워터마크 왼쪽 하단 완전 밀착 (여백 0)
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
@@ -411,7 +417,7 @@
             ctx.textAlign = "center"; ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
             ctx.textAlign = "left"; ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
         });
-        // 💡 [V8.6 수정] 워터마크 합성 사진 압축률 강화 (0.7 -> 0.5)
+        // 💡 V8.6 수정사항: 압축률 강화 (0.5)
         return c.toDataURL('image/jpeg', 0.5);
     }
 
@@ -505,6 +511,7 @@
             document.getElementById('generating-badge').style.display = 'none';
             
             if(result.result==='success') { 
+                // 💡 V8.5 수정사항: 성공 메시지 간소화
                 showMsg("🎉 성공적으로 전송되었습니다!"); 
                 if (editingIndex > -1) { 
                     savedList.splice(editingIndex, 1); 
