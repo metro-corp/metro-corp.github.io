@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V8.7 -->
-    <title>(주)METRO R&S 현장관리 시스템 V8.7</title>
+    <!-- 💡 버전 업데이트: V8.8 -->
+    <title>(주)METRO R&S 현장관리 시스템 V8.8</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -116,7 +116,6 @@
     </div>
 </div>
 
-<!-- 💡 V8.5 공지사항 내용 유지 -->
 <div id="notice-modal">
     <div class="custom-alert-box">
         <div style="background: var(--accent); color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -25px -20px 20px; font-weight: 900; font-size: 15px; letter-spacing: 1px;">📢 공지사항</div>
@@ -124,7 +123,8 @@
             1. 새로고침시 데이터 로딩 시간이 필요합니다.<br>
             2. 임시저장목록은 10건 정도 가능합니다.<br>
             3. 전송 속도를 개선했습니다.<br>
-            4. 최종전송 시 네트워크 상태를 확인 바랍니다.
+            4. 최종전송 시 네트워크 상태를 확인 바랍니다.<br>
+            5. 워터마크 왁인 창을 삭제했습니다.
         </div>
         <button class="custom-alert-btn" onclick="closeNotice()">확인 (오늘 하루 안 보기)</button>
     </div>
@@ -135,8 +135,8 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <!-- 💡 버전 업데이트: V8.7 -->
-        <span>(주)METRO R&S 현장관리 시스템 V8.7</span>
+        <!-- 💡 버전 업데이트: V8.8 -->
+        <span>(주)METRO R&S 현장관리 시스템 V8.8</span>
     </div>
 </header>
 
@@ -357,10 +357,8 @@
 
     function proc(input, pId, tId) {
         if(input.files && input.files[0]) {
-            let applyWm = false;
-            if (pId !== 'p3') {
-                applyWm = confirm("📷 사진에 현장 정보(워터마크)를 추가하시겠습니까?\n\n[확인] 워터마크 표기\n[취소] 원본 사진 유지");
-            }
+            // 💡 [V8.8 수정] 물어보는 창 삭제, p1/p2는 무조건 자동 생성
+            let applyWm = (pId !== 'p3');
 
             isProcessingImage = true; const txt = document.getElementById(tId);
             txt.innerHTML = "<div style='font-size: 24px;'>⏳</div><span>처리중...</span>";
@@ -372,13 +370,13 @@
                     if (pId === 'p3') {
                         let max = 1600; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
                         canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        // 💡 V8.6 수정사항: 완료확인서 압축률 강화 (0.3)
+                        // V8.6 최적화 사양 (0.3)
                         document.getElementById(pId).src = canvas.toDataURL('image/jpeg', 0.3); 
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } else { sH = w / targetRatio; sY = (h - sH) / 2; }
                         canvas.width = 1200; canvas.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
-                        // 💡 V8.6 수정사항: 원본 사진 압축률 강화 (0.4)
+                        // V8.6 최적화 사양 (0.4)
                         document.getElementById(pId).dataset.raw = canvas.toDataURL('image/jpeg', 0.4);
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
                         if(applyWm) { document.getElementById(pId).src = addWM(canvas); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
@@ -391,7 +389,7 @@
         }
     }
 
-    // 💡 V7.9 수정사항: 워터마크 왼쪽 하단 완전 밀착 (여백 0)
+    // 💡 V7.9 사양: 워터마크 왼쪽 하단 완전 밀착 (여백 0)
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
@@ -417,7 +415,7 @@
             ctx.textAlign = "center"; ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
             ctx.textAlign = "left"; ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
         });
-        // 💡 V8.6 수정사항: 압축률 강화 (0.5)
+        // V8.6 최적화 사양 (0.5)
         return c.toDataURL('image/jpeg', 0.5);
     }
 
@@ -511,7 +509,7 @@
             document.getElementById('generating-badge').style.display = 'none';
             
             if(result.result==='success') { 
-                // 💡 V8.5 수정사항: 성공 메시지 간소화
+                // V8.5 수정사항: 성공 메시지 간소화
                 showMsg("🎉 성공적으로 전송되었습니다!"); 
                 if (editingIndex > -1) { 
                     savedList.splice(editingIndex, 1); 
