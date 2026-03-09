@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>(주)METRO R&S 현장관리 시스템 V8.5</title>
+    <title>(주)METRO R&S 현장관리 시스템 V8.6</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -112,7 +112,6 @@
     </div>
 </div>
 
-<!-- 💡 [V8.5 수정] 공지사항 내용 변경 -->
 <div id="notice-modal">
     <div class="custom-alert-box">
         <div style="background: var(--accent); color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -25px -20px 20px; font-weight: 900; font-size: 15px; letter-spacing: 1px;">📢 공지사항</div>
@@ -131,7 +130,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V8.5</span>
+        <span>(주)METRO R&S 현장관리 시스템 V8.6</span>
     </div>
 </header>
 
@@ -367,12 +366,14 @@
                     if (pId === 'p3') {
                         let max = 1600; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
                         canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        document.getElementById(pId).src = canvas.toDataURL('image/jpeg', 0.4); 
+                        // 💡 [V8.6 수정] 완료확인서 압축률 강화 (0.4 -> 0.3)
+                        document.getElementById(pId).src = canvas.toDataURL('image/jpeg', 0.3); 
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } else { sH = w / targetRatio; sY = (h - sH) / 2; }
                         canvas.width = 1200; canvas.height = 900; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1200, 900);
-                        document.getElementById(pId).dataset.raw = canvas.toDataURL('image/jpeg', 0.6);
+                        // 💡 [V8.6 수정] 원본 사진 압축률 강화 (0.6 -> 0.4)
+                        document.getElementById(pId).dataset.raw = canvas.toDataURL('image/jpeg', 0.4);
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
                         if(applyWm) { document.getElementById(pId).src = addWM(canvas); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
                     }
@@ -384,6 +385,7 @@
         }
     }
 
+    // 💡 워터마크 디자인 및 위치 (왼쪽 하단 여백 0 완전 밀착)
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
@@ -409,7 +411,8 @@
             ctx.textAlign = "center"; ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
             ctx.textAlign = "left"; ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
         });
-        return c.toDataURL('image/jpeg', 0.7);
+        // 💡 [V8.6 수정] 워터마크 합성 사진 압축률 강화 (0.7 -> 0.5)
+        return c.toDataURL('image/jpeg', 0.5);
     }
 
     function getD() { return { date: document.getElementById('today-date').value, site: document.getElementById('site').value, sid: currentSid, workSheet: document.getElementById('db-sheet').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value, p1: document.getElementById('p1').src, p1_raw: document.getElementById('p1').dataset.raw || "", p1_wm: document.getElementById('p1').dataset.wm || "true", p2: document.getElementById('p2').src, p2_raw: document.getElementById('p2').dataset.raw || "", p2_wm: document.getElementById('p2').dataset.wm || "true", p3: document.getElementById('p3').src }; }
@@ -502,7 +505,6 @@
             document.getElementById('generating-badge').style.display = 'none';
             
             if(result.result==='success') { 
-                // 💡 [V8.5 수정] 성공 메시지 간소화
                 showMsg("🎉 성공적으로 전송되었습니다!"); 
                 if (editingIndex > -1) { 
                     savedList.splice(editingIndex, 1); 
