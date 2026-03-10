@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V9.2 -->
-    <title>(주)METRO R&S 현장관리 시스템 V9.2</title>
+    <!-- 💡 버전 업데이트: V9.4 -->
+    <title>(주)METRO R&S 현장관리 시스템 V9.4</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -36,6 +36,7 @@
 
         body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--bg-body); font-size: 15px; color: var(--text-main); padding-bottom: 60px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
         
+        /* 💡 헤더 스크롤 겹침 방지 사양 유지 */
         header { background: linear-gradient(135deg, var(--primary-dark), var(--primary-light)); color: white; padding: 18px; font-weight: 700; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 17px; }
         
         .container { padding: 15px; max-width: 800px; margin: auto; }
@@ -67,6 +68,11 @@
         .photo-box span { margin-top: 5px; display: inline-block; }
         .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; z-index: 10; border-radius: 12px; }
 
+        /* 💡 추가 사진 영역 스타일 유지 */
+        #extra-photo-container { display: none; margin-top: 15px; border-top: 1.5px dashed var(--border-light); padding-top: 15px; }
+        .btn-toggle-extra { width: 100%; padding: 14px; background: #f1f5f9; border: 1.5px solid var(--border-light); border-radius: 14px; color: var(--text-sub); font-weight: 800; font-size: 14px; margin-top: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s; }
+        .btn-toggle-extra:hover { background: #e2e8f0; color: var(--primary-dark); }
+
         .btn-group { display: flex; gap: 12px; margin-top: 25px; }
         button { padding: 16px; border: none; border-radius: 12px; color: white; font-weight: 800; cursor: pointer; font-size: 15px; font-family: inherit; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 6px; white-space: nowrap; }
         button:active { transform: scale(0.97); }
@@ -82,19 +88,6 @@
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
 
-        #pdf-template { 
-            display: none; 
-            width: 794px; 
-            height: 1122px; 
-            padding: 40px; 
-            background: white; 
-            font-family: 'Malgun Gothic', sans-serif; 
-            box-sizing: border-box; 
-            margin: 0 auto; 
-            overflow: hidden; 
-            position: relative;
-        }
-        
         #generating-badge { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 16px; white-space: nowrap; }
 
         #custom-alert, #notice-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10005; backdrop-filter: blur(3px); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.2s ease; }
@@ -116,16 +109,15 @@
 
 <div id="notice-modal">
     <div class="custom-alert-box">
-        <!-- 💡 공지사항 제목 버전 업데이트: V9.2 -->
-        <div style="background: var(--accent); color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -25px -20px 20px; font-weight: 900; font-size: 15px; letter-spacing: 1px;">📢 공지사항 (V9.2)</div>
+        <div style="background: var(--accent); color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -25px -20px 20px; font-weight: 900; font-size: 15px; letter-spacing: 1px;">📢 공지사항 (V9.4)</div>
         <div class="custom-alert-msg" id="notice-msg" style="text-align: left; font-size: 14px; font-weight: 600; line-height: 1.7;">
-            <!-- 💡 [V9.2 수정] 요청하신 대로 1번에 버전 정보 추가 -->
-            1. 현재 버전은 V9.2 입니다.<br>
+            1. 현재 버전은 V9.4 입니다.<br>
             2. 새로고침시 데이터 로딩 시간이 필요합니다.<br>
             3. 임시저장목록은 10건 정도 가능합니다.<br>
-            4. 전송 속도를 개선했습니다.<br>
+            4. 전송 속도를 대폭 개선했습니다.<br>
             5. 최종전송 시 네트워크 상태를 확인 바랍니다.<br>
-            6. 워터마크 확인 창을 삭제했습니다.
+            6. 워터마크 확인 창을 삭제(자동적용)했습니다.<br>
+            7. 추가 사진 9칸(p4~p12) 기능을 지원합니다.
         </div>
         <button class="custom-alert-btn" onclick="closeNotice()">확인 (오늘 하루 안 보기)</button>
     </div>
@@ -136,8 +128,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <!-- 💡 버전 업데이트: V9.2 -->
-        <span>(주)METRO R&S 현장관리 시스템 V9.2</span>
+        <span>(주)METRO R&S 현장관리 시스템 V9.4</span>
     </div>
 </header>
 
@@ -183,24 +174,39 @@
         <div class="section-title" style="margin-top: 25px; border:none; padding-bottom:0;"><span>3</span> 현장 사진 첨부</div>
         <div class="photo-area">
             <div class="photo-box" onclick="document.getElementById('f1').click()">
-                <div id="t1" style="pointer-events: none;">
-                    <div style="font-size: 24px;">📷</div><span>작업 전</span>
-                </div>
-                <img id="p1" class="preview-img"><input type="file" id="f1" hidden accept="image/*" onchange="proc(this,'p1','t1')">
+                <div id="t1" style="pointer-events: none;"><div style="font-size: 24px;">📷</div><span>작업 전</span></div>
+                <img id="p1" class="preview-img"><input type="file" id="f1" hidden accept="image/*" onchange="proc(this,'p1','t1','작업 전')">
             </div>
             <div class="photo-box" onclick="document.getElementById('f2').click()">
-                <div id="t2" style="pointer-events: none;">
-                    <div style="font-size: 24px;">📷</div><span>작업 후</span>
-                </div>
-                <img id="p2" class="preview-img"><input type="file" id="f2" hidden accept="image/*" onchange="proc(this,'p2','t2')">
+                <div id="t2" style="pointer-events: none;"><div style="font-size: 24px;">📷</div><span>작업 후</span></div>
+                <img id="p2" class="preview-img"><input type="file" id="f2" hidden accept="image/*" onchange="proc(this,'p2','t2','작업 후')">
             </div>
             <div class="photo-box" onclick="document.getElementById('f3').click()">
-                <div id="t3" style="pointer-events: none;">
-                    <div style="font-size: 24px;">📋</div><span>완료확인서</span>
-                </div>
-                <img id="p3" class="preview-img"><input type="file" id="f3" hidden accept="image/*" onchange="proc(this,'p3','t3')">
+                <div id="t3" style="pointer-events: none;"><div style="font-size: 24px;">📋</div><span>완료확인서</span></div>
+                <img id="p3" class="preview-img"><input type="file" id="f3" hidden accept="image/*" onchange="proc(this,'p3','t3','완료확인서')">
             </div>
         </div>
+
+        <button class="btn-toggle-extra" id="btn-toggle-extra" onclick="toggleExtraPhotos()">
+            <span id="toggle-icon">➕</span> 추가 사진 등록 (9칸)
+        </button>
+
+        <div id="extra-photo-container">
+            <div class="photo-area" style="grid-template-columns: repeat(3, 1fr); margin-top:10px;">
+                <!-- 💡 추가 슬롯 4번~12번 -->
+                <script>
+                    for(let i=4; i<=12; i++) {
+                        document.write(`
+                            <div class="photo-box" onclick="document.getElementById('f${i}').click()">
+                                <div id="t${i}" style="pointer-events: none;"><div style="font-size: 22px;">📷</div><span>추가${i}</span></div>
+                                <img id="p${i}" class="preview-img"><input type="file" id="f${i}" hidden accept="image/*" onchange="proc(this,'p${i}','t${i}','추가${i}')">
+                            </div>
+                        `);
+                    }
+                </script>
+            </div>
+        </div>
+
         <div class="btn-group">
             <button class="btn-save" onclick="saveLocal()">💾 수정 저장</button>
             <button class="btn-send" id="btn-send" onclick="send()">🚀 최종 전송</button>
@@ -222,6 +228,19 @@
     let cloudDB = {}; let currentSid = ""; let savedList = [];
     let editingIndex = -1; let isProcessingImage = false; 
     let isInitialLoad = true; 
+
+    function toggleExtraPhotos() {
+        const container = document.getElementById('extra-photo-container');
+        const icon = document.getElementById('toggle-icon');
+        const btnText = document.getElementById('btn-toggle-extra');
+        if (container.style.display === 'block') {
+            container.style.display = 'none';
+            btnText.innerHTML = '<span>➕</span> 추가 사진 등록 (9칸)';
+        } else {
+            container.style.display = 'block';
+            btnText.innerHTML = '<span>➖</span> 추가 사진 접기';
+        }
+    }
 
     function toggleArea() {
         const type = document.querySelector('input[name="area-type"]:checked').value;
@@ -256,7 +275,7 @@
     }
 
     window.onload = async () => { 
-        // 💡 V9.1 개선사항: 공지사항 즉시 노출
+        // 💡 V9.1 개선: 공지사항 즉시 노출
         checkNotice();
 
         const now = new Date();
@@ -357,9 +376,9 @@
 
     function fill(v) { ['loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; }); document.getElementById('search-results').style.display='none'; autoSave(); }
 
-    function proc(input, pId, tId) {
+    function proc(input, pId, tId, label) {
         if(input.files && input.files[0]) {
-            // V8.8 지침: p1/p2는 무조건 워터마크 자동 생성
+            // p3(완료확인서)만 워터마크 예외
             let applyWm = (pId !== 'p3');
 
             isProcessingImage = true; const txt = document.getElementById(tId);
@@ -370,35 +389,34 @@
                     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
                     let w = img.width, h = img.height;
                     if (pId === 'p3') {
-                        // V8.9 최적화: 폭 1200
+                        // V8.9 최적화 해상도 (폭 1200)
                         let max = 1200; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
                         canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        // V8.6 최적화: 압축률 0.3
+                        // V8.6 고압축 사양 (0.3)
                         document.getElementById(pId).src = canvas.toDataURL('image/jpeg', 0.3); 
                     } else {
-                        // V8.9 최적화: 해상도 1000x750
+                        // V8.9 최적화 해상도 (1000x750)
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } else { sH = w / targetRatio; sY = (h - sH) / 2; }
                         canvas.width = 1000; canvas.height = 750; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 1000, 750);
-                        // V8.6 최적화: 원본 0.4
+                        // V8.6 고압축 사양 (0.4)
                         document.getElementById(pId).dataset.raw = canvas.toDataURL('image/jpeg', 0.4);
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
                         if(applyWm) { document.getElementById(pId).src = addWM(canvas); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
                     }
                     document.getElementById(pId).style.display='block'; txt.style.display='none';
-                    txt.innerHTML = `<div style="font-size: 24px;">${pId==='p3'?'📋':'📷'}</div><span>${pId==='p1'?'작업 전':(pId==='p2'?'작업 후':'완료확인서')}</span>`;
+                    txt.innerHTML = `<div style="font-size: 24px;">${pId==='p3'?'📋':'📷'}</div><span>${label}</span>`;
                     isProcessingImage = false; autoSave(); 
                 }; img.src = e.target.result;
             }; r.readAsDataURL(input.files[0]);
         }
     }
 
-    // 💡 V7.9 지침: 워터마크 왼쪽 하단 여백 0 밀착
     function addWM(c) {
         const ctx = c.getContext('2d'), w = c.width, h = c.height;
         const boxW = 580, rowH = 40, col1W = 110;
         const totalH = rowH * 5;
-        const x = 0, y = h - totalH; 
+        const x = 0, y = h - totalH; // 💡 왼쪽 하단 밀착
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
         ctx.fillRect(x, y, boxW, totalH);
@@ -419,11 +437,24 @@
             ctx.textAlign = "center"; ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
             ctx.textAlign = "left"; ctx.fillText(values[i], x + col1W + 15, y + (i * rowH) + (rowH / 2));
         });
-        // V8.6 최적화: 합성본 0.5
         return c.toDataURL('image/jpeg', 0.5);
     }
 
-    function getD() { return { date: document.getElementById('today-date').value, site: document.getElementById('site').value, sid: currentSid, workSheet: document.getElementById('db-sheet').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value, p1: document.getElementById('p1').src, p1_raw: document.getElementById('p1').dataset.raw || "", p1_wm: document.getElementById('p1').dataset.wm || "true", p2: document.getElementById('p2').src, p2_raw: document.getElementById('p2').dataset.raw || "", p2_wm: document.getElementById('p2').dataset.wm || "true", p3: document.getElementById('p3').src }; }
+    function getD() { 
+        let d = { 
+            date: document.getElementById('today-date').value, site: document.getElementById('site').value, sid: currentSid, workSheet: document.getElementById('db-sheet').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value, 
+            p1: document.getElementById('p1').src, p1_raw: document.getElementById('p1').dataset.raw || "", p1_wm: document.getElementById('p1').dataset.wm || "true", 
+            p2: document.getElementById('p2').src, p2_raw: document.getElementById('p2').dataset.raw || "", p2_wm: document.getElementById('p2').dataset.wm || "true", 
+            p3: document.getElementById('p3').src 
+        };
+        for(let i=4; i<=12; i++) {
+            let el = document.getElementById('p'+i);
+            d['p'+i] = el.src;
+            d['p'+i+'_raw'] = el.dataset.raw || "";
+            d['p'+i+'_wm'] = el.dataset.wm || "true";
+        }
+        return d;
+    }
 
     function saveLocal() {
         if(isProcessingImage) return showMsg("⏳ 아이폰 사진 처리가 진행 중입니다.");
@@ -461,13 +492,17 @@
         if(d.ho === "-") { document.querySelector('input[name="area-type"][value="common"]').checked = true; } else { document.querySelector('input[name="area-type"][value="private"]').checked = true; }
         toggleArea();
         document.getElementById('today-date').value = d.date; document.getElementById('dong').value = d.dong; document.getElementById('ho').value = d.ho; document.getElementById('loc').value = d.loc; document.getElementById('work').value = d.work; document.getElementById('type').value = d.type; document.getElementById('contractor').value = d.contractor; document.getElementById('desc').value = d.desc;
-        [1, 2].forEach(num => {
+        
+        for(let num=1; num<=12; num++) {
             const imgEl = document.getElementById('p' + num); const textEl = document.getElementById('t' + num); const imgSrc = d['p' + num];
             if (imgSrc && imgSrc.length > 100) { 
                 imgEl.src = imgSrc; imgEl.dataset.raw = d['p' + num + '_raw'] || ""; imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; imgEl.style.display = 'block'; textEl.style.display = 'none'; 
             } else { imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.dataset.wm = "true"; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
-        });
-        if (d.p3 && d.p3.length > 100) { document.getElementById('p3').src = d.p3; document.getElementById('p3').style.display = 'block'; document.getElementById('t3').style.display = 'none'; } else { document.getElementById('p3').src = ''; document.getElementById('p3').style.display = 'none'; document.getElementById('t3').style.display = 'block'; }
+        }
+        
+        const hasExtra = [4,5,6,7,8,9,10,11,12].some(n => d['p'+n] && d['p'+n].length > 100);
+        if(hasExtra) { document.getElementById('extra-photo-container').style.display = 'block'; }
+        
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; autoSave(); 
     }
 
@@ -476,59 +511,52 @@
     function clearInputs(isSaveLocal) { 
         ['dong','ho','loc','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
         document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
-        [1,2,3].forEach(i => { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }); 
+        
+        for(let i=1; i<=12; i++) { 
+            let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; 
+        }
+        document.getElementById('extra-photo-container').style.display = 'none';
+        
         editingIndex = -1; document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
         if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
     }
 
     async function send() {
-        if(isProcessingImage) return showMsg("⏳ 아이폰 사진 처리가 진행 중입니다.");
+        if(isProcessingImage) return showMsg("⏳ 사진 처리가 진행 중입니다.");
         const d = getD(); if(!currentSid || !d.dong || !d.ho || !d.work) return showMsg("🚨 필수 정보 누락!");
         
         const btn = document.getElementById('btn-send'); 
         btn.innerHTML = "⏳ 전송 중..."; 
         btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
-        
         document.getElementById('generating-badge').style.display = 'block';
         
         try {
             const payload = { 
-                targetSheetId: currentSid, 
-                record: d, 
-                pdfBase64: "", 
-                p1Base64: (d.p1||"").split(',')[1]||"", 
-                p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", 
-                p2Base64: (d.p2||"").split(',')[1]||"", 
-                p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", 
+                targetSheetId: currentSid, record: d, pdfBase64: "", 
+                p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", 
+                p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", 
                 p3Base64: (d.p3||"").split(',')[1]||"" 
             };
-
-            const response = await fetch(MY_GAS_URL, { 
-                method: 'POST', 
-                body: JSON.stringify(payload) 
-            }); 
             
+            for(let i=4; i<=12; i++) {
+                payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||"";
+                payload['p'+i+'RawBase64'] = (d['p'+i+'_wm'] === "true") ? (d['p'+i+'_raw']||"").split(',')[1]||"" : "";
+            }
+
+            const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
             const result = await response.json();
             
             document.getElementById('generating-badge').style.display = 'none';
-            
             if(result.result==='success') { 
                 showMsg("🎉 성공적으로 전송되었습니다!"); 
-                if (editingIndex > -1) { 
-                    savedList.splice(editingIndex, 1); 
-                    localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
-                }
-                clearInputs(true); 
-                updateTable(); 
-            } else { 
-                showMsg("❌ 서버 오류: " + result.message); 
-            }
+                if (editingIndex > -1) { savedList.splice(editingIndex, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); }
+                clearInputs(true); updateTable(); 
+            } else { showMsg("❌ 서버 오류: " + result.message); }
         } catch(e) { 
             document.getElementById('generating-badge').style.display = 'none';
             showMsg("❌ 전송 실패: 네트워크 상태를 확인하세요."); 
         } finally { 
-            btn.innerHTML = "🚀 최종 전송"; 
-            btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
+            btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
         }
     }
 </script>
