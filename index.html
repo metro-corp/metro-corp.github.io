@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V10.4 (과거 기록 조회 통합 버전) -->
-    <title>(주)METRO R&S 현장관리 시스템 V10.4</title>
+    <!-- 💡 버전 업데이트: V10.5 (기록 조회 하단 이동 및 자동 저장 제거) -->
+    <title>(주)METRO R&S 현장관리 시스템 V10.5</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -63,13 +63,14 @@
         .photo-area { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
         .photo-box { background: var(--input-bg); aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #cbd5e1; border-radius: 14px; cursor: pointer; position: relative; overflow: hidden; transition: all 0.2s; color: var(--text-sub); font-weight: 600; font-size: 13px; text-align: center; padding: 5px; }
         .photo-box:hover { border-color: var(--accent); background: #f0f9ff; color: var(--accent); }
-        .photo-box span { margin-top: 5px; display: inline-block; }
         .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; z-index: 10; border-radius: 12px; }
 
         #extra-photo-container { display: none; margin-top: 15px; border-top: 1.5px dashed var(--border-light); padding-top: 15px; }
-        .btn-toggle-extra, .btn-toggle-sent, .btn-history { width: 100%; padding: 14px; background: #f1f5f9; border: 1.5px solid var(--border-light); border-radius: 14px; color: var(--text-sub); font-weight: 800; font-size: 14px; margin-top: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s; }
-        .btn-toggle-extra:hover, .btn-toggle-sent:hover, .btn-history:hover { background: #e2e8f0; color: var(--primary-dark); }
-        .btn-history { background: #eef2ff; color: var(--accent); border-color: #c7d2fe; margin-top: 10px; }
+        .btn-toggle-extra, .btn-toggle-sent { width: 100%; padding: 14px; background: #f1f5f9; border: 1.5px solid var(--border-light); border-radius: 14px; color: var(--text-sub); font-weight: 800; font-size: 14px; margin-top: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s; }
+        .btn-toggle-extra:hover, .btn-toggle-sent:hover { background: #e2e8f0; color: var(--primary-dark); }
+        
+        .btn-history-search { background: #eef2ff; color: var(--accent); border: 1.5px solid #c7d2fe; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn-history-search:hover { background: #e0e7ff; }
 
         #sent-today-container { display: none; margin-top: 15px; padding-top: 15px; border-top: 1.5px dashed var(--border-light); }
 
@@ -91,7 +92,6 @@
 
         #generating-badge { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 16px; white-space: nowrap; }
 
-        /* 💡 팝업 스타일 (V10.4 공통) */
         #custom-alert, #history-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10005; backdrop-filter: blur(3px); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.2s ease; }
         #custom-alert.show, #history-modal.show { display: flex; opacity: 1; }
         .custom-alert-box { background: white; padding: 25px 20px 20px; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); max-width: 320px; width: 100%; transform: translateY(20px) scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
@@ -110,10 +110,10 @@
     </div>
 </div>
 
-<!-- 💡 과거 기록 조회 모달 (V10.4) -->
+<!-- 💡 과거 기록 조회 모달 -->
 <div id="history-modal">
     <div class="custom-alert-box" style="display:flex; flex-direction:column; max-height:85vh; width:95%;">
-        <div style="background:var(--primary-dark); color:white; padding:18px; font-weight:900; font-size:17px; border-radius:24px 24px 0 0;">🔍 과거 작업 이력 조회</div>
+        <div style="background:var(--primary-dark); color:white; padding:18px; font-weight:900; font-size:17px; border-radius:24px 24px 0 0;">🔍 과거 작업 이력 결과</div>
         <div style="overflow-y:auto; flex:1; padding:15px; background:#fff;">
             <table style="margin-top:0; border-radius:0;">
                 <thead style="position:sticky; top:0; z-index:10; background:#f8fafc;">
@@ -135,7 +135,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V10.4</span>
+        <span>(주)METRO R&S 현장관리 시스템 V10.5</span>
     </div>
 </header>
 
@@ -171,11 +171,6 @@
             
             <div id="search-results"></div>
             
-            <!-- 💡 과거 기록 조회 버튼 (V10.4) -->
-            <button class="btn-history full" onclick="loadHistory()">
-                <span>🔍</span> 입력된 세대 과거 기록 검색
-            </button>
-
             <input type="text" id="loc" placeholder="위치">
             <input type="text" id="work" placeholder="공종">
             <input type="text" id="type" placeholder="하자 유형">
@@ -240,6 +235,19 @@
                 <thead><tr><th style="width:10%">No</th><th style="width:50%">전송 완료 내역</th><th style="width:40%">상태</th></tr></thead>
                 <tbody id="sent-list-body"><tr><td colspan="3" style="padding:20px; color:var(--text-sub); font-size:13px;">오늘 전송된 내역이 없습니다.</td></tr></tbody>
             </table>
+        </div>
+
+        <!-- 💡 [V10.5 이동] 과거 기록 조회 섹션 (화면 최하단 별도 구성) -->
+        <div style="margin-top:25px; padding-top:20px; border-top:2px solid var(--border-light);">
+            <div class="section-title" style="border:none; margin-bottom:10px;"><span>🔍</span> 과거 작업 이력 검색</div>
+            <p style="font-size:12px; color:var(--text-sub); margin-bottom:15px; margin-left:2px;">입력창과 무관하게 동/호수만으로 과거 기록을 조회합니다.</p>
+            <div class="grid" style="grid-template-columns: 1fr 1fr; margin-bottom:12px;">
+                <input type="text" id="search-dong" placeholder="검색할 동">
+                <input type="text" id="search-ho" placeholder="검색할 호수">
+            </div>
+            <button class="btn-history-search full" onclick="loadHistory()">
+                <span>🔍</span> 기록 조회하기
+            </button>
         </div>
     </div>
 </div>
@@ -386,12 +394,12 @@
         } catch(e) { d.innerHTML = '<option value="">❌ 실패</option>'; }
     }
 
-    // 💡 과거 기록 조회 함수 (V10.4)
+    // 💡 과거 기록 조회 함수 (V10.5 전용 입력창 참조)
     async function loadHistory() {
-        const dong = document.getElementById('dong').value.trim();
-        const ho = document.getElementById('ho').value.trim();
+        const dong = document.getElementById('search-dong').value.trim();
+        const ho = document.getElementById('search-ho').value.trim();
         if(!currentSid) return showMsg("🏢 현장을 먼저 선택하세요.");
-        if(!dong) return showMsg("🔢 동 번호를 입력하세요.");
+        if(!dong) return showMsg("🔢 검색할 동 번호를 입력하세요.");
 
         const listBody = document.getElementById('history-list-body');
         listBody.innerHTML = '<tr><td colspan="3" style="padding:40px;">⏳ 서버에서 기록을 찾는 중...</td></tr>';
@@ -411,7 +419,7 @@
                     </tr>`;
                 }).join('');
             } else {
-                listBody.innerHTML = '<tr><td colspan="3" style="padding:40px; color:var(--text-sub);">해당 위치에 기록된 작업이 없습니다.</td></tr>';
+                listBody.innerHTML = '<tr><td colspan="3" style="padding:40px; color:var(--text-sub);">해당 세대에 기록된 작업이 없습니다.</td></tr>';
             }
         } catch(e) {
             listBody.innerHTML = '<tr><td colspan="3" style="padding:40px; color:var(--danger);">❌ 로드 실패 (네트워크 확인)</td></tr>';
@@ -460,24 +468,15 @@
                         if(applyWm) { finalDataUrl = addWM(canvas); document.getElementById(pId).src = finalDataUrl; } 
                         else { finalDataUrl = document.getElementById(pId).dataset.raw; document.getElementById(pId).src = finalDataUrl; }
                     }
-                    if (pId !== 'p3') { saveToDevice(finalDataUrl, label); }
+                    
+                    // 💡 [V10.5 제거] saveToDevice(finalDataUrl, label) 호출부 삭제됨
+
                     document.getElementById(pId).style.display='block'; txt.style.display='none';
                     txt.innerHTML = `<div style="font-size: 24px;">${pId==='p3'?'📋':'📷'}</div><span>${label}</span>`;
                     isProcessingImage = false; autoSave(); 
                 }; img.src = e.target.result;
             }; r.readAsDataURL(input.files[0]);
         }
-    }
-
-    function saveToDevice(dataUrl, label) {
-        const d = getD();
-        const site = d.site || "현장";
-        const unit = (d.ho === "-" ? d.dong : `${d.dong}_${d.ho}`) || "위치";
-        const work = d.work || "공종";
-        const fileName = `METRO_${site}_${unit}_${work}_${label}.jpg`;
-        const link = document.createElement('a');
-        link.href = dataUrl; link.download = fileName; document.body.appendChild(link);
-        link.click(); document.body.removeChild(link);
     }
 
     function addWM(c) {
