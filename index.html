@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V9.8 (공지사항 제거본) -->
-    <title>(주)METRO R&S 현장관리 시스템 V9.8</title>
+    <!-- 💡 버전 업데이트: V9.9 (오늘 전송 내역 추가) -->
+    <title>(주)METRO R&S 현장관리 시스템 V9.9</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -67,8 +67,11 @@
         .preview-img { width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; z-index: 10; border-radius: 12px; }
 
         #extra-photo-container { display: none; margin-top: 15px; border-top: 1.5px dashed var(--border-light); padding-top: 15px; }
-        .btn-toggle-extra { width: 100%; padding: 14px; background: #f1f5f9; border: 1.5px solid var(--border-light); border-radius: 14px; color: var(--text-sub); font-weight: 800; font-size: 14px; margin-top: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s; }
-        .btn-toggle-extra:hover { background: #e2e8f0; color: var(--primary-dark); }
+        .btn-toggle-extra, .btn-toggle-sent { width: 100%; padding: 14px; background: #f1f5f9; border: 1.5px solid var(--border-light); border-radius: 14px; color: var(--text-sub); font-weight: 800; font-size: 14px; margin-top: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s; }
+        .btn-toggle-extra:hover, .btn-toggle-sent:hover { background: #e2e8f0; color: var(--primary-dark); }
+        
+        /* 💡 오늘 전송 내역 전용 스타일 */
+        #sent-today-container { display: none; margin-top: 15px; padding-top: 15px; border-top: 1.5px dashed var(--border-light); }
 
         .btn-group { display: flex; gap: 12px; margin-top: 25px; }
         button { padding: 16px; border: none; border-radius: 12px; color: white; font-weight: 800; cursor: pointer; font-size: 15px; font-family: inherit; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 6px; white-space: nowrap; }
@@ -84,10 +87,10 @@
         
         .action-btn { background: #e2e8f0; color: var(--primary-dark); padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; flex: 1; white-space: nowrap; word-break: keep-all; }
         .action-btn.del { background: #fee2e2; color: var(--danger); }
+        .action-btn.view { background: #e0f2fe; color: var(--accent-hover); }
 
         #generating-badge { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--primary-dark); color: white; padding: 14px 28px; border-radius: 30px; font-weight: 800; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 16px; white-space: nowrap; }
 
-        /* 💡 공지사항 스타일 제거됨 (V9.8) */
         #custom-alert { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10005; backdrop-filter: blur(3px); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.2s ease; }
         #custom-alert.show { display: flex; opacity: 1; }
         .custom-alert-box { background: white; padding: 25px 20px 20px; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); max-width: 320px; width: 100%; transform: translateY(20px) scale(0.95); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
@@ -105,14 +108,12 @@
     </div>
 </div>
 
-<!-- 💡 공지사항 모달창 구조 완전 제거 (V9.8) -->
-
 <div id="generating-badge">🚀 전송 중...</div>
 
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V9.8</span>
+        <span>(주)METRO R&S 현장관리 시스템 V9.9</span>
     </div>
 </header>
 
@@ -172,7 +173,7 @@
         </div>
 
         <button class="btn-toggle-extra" id="btn-toggle-extra" onclick="toggleExtraPhotos()">
-            <span id="toggle-icon">➕</span> 추가 사진 등록 (9칸)
+            <span id="toggle-icon-extra">➕</span> 추가 사진 등록 (9칸)
         </button>
 
         <div id="extra-photo-container">
@@ -202,18 +203,32 @@
             <thead><tr><th style="width:10%">No</th><th style="width:50%">작업 장소 (공종)</th><th style="width:40%">관리</th></tr></thead>
             <tbody id="list-body"><tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr></tbody>
         </table>
+
+        <!-- 💡 [V9.9 추가] 오늘 전송 목록 토글 버튼 -->
+        <button class="btn-toggle-sent" onclick="toggleSentHistory()">
+            <span id="toggle-icon-sent">🔽</span> 오늘 전송 완료 목록 (<span id="sent-count">0</span>)
+        </button>
+
+        <!-- 💡 [V9.9 추가] 오늘 전송 목록 테이블 영역 -->
+        <div id="sent-today-container">
+            <table>
+                <thead><tr><th style="width:10%">No</th><th style="width:50%">작송 완료 내역</th><th style="width:40%">상태</th></tr></thead>
+                <tbody id="sent-list-body"><tr><td colspan="3" style="padding:20px; color:var(--text-sub); font-size:13px;">오늘 전송된 내역이 없습니다.</td></tr></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
     const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyE1jMEzrix8xYu3_lgHUX8Oqm6TAtWP6RDZzZ2WFL9c6Crlz5BFTO7__JoFygqRwUD/exec"; 
     
-    let cloudDB = {}; let currentSid = ""; let savedList = [];
+    let cloudDB = {}; let currentSid = ""; let savedList = []; let sentTodayList = [];
     let editingIndex = -1; let isProcessingImage = false; 
     let isInitialLoad = true; 
 
     function toggleExtraPhotos() {
         const container = document.getElementById('extra-photo-container');
+        const icon = document.getElementById('toggle-icon-extra');
         const btnText = document.getElementById('btn-toggle-extra');
         if (container.style.display === 'block') {
             container.style.display = 'none';
@@ -221,6 +236,19 @@
         } else {
             container.style.display = 'block';
             btnText.innerHTML = '<span>➖</span> 추가 사진 접기';
+        }
+    }
+
+    // 💡 [V9.9 추가] 전송 목록 토글 함수
+    function toggleSentHistory() {
+        const container = document.getElementById('sent-today-container');
+        const icon = document.getElementById('toggle-icon-sent');
+        if (container.style.display === 'block') {
+            container.style.display = 'none';
+            icon.innerText = '🔽';
+        } else {
+            container.style.display = 'block';
+            icon.innerText = '🔼';
         }
     }
 
@@ -238,19 +266,26 @@
     function showMsg(msg) { document.getElementById('alert-msg').innerText = msg; const alertEl = document.getElementById('custom-alert'); alertEl.style.display = 'flex'; setTimeout(() => alertEl.classList.add('show'), 10); }
     function closeAlert() { const alertEl = document.getElementById('custom-alert'); alertEl.classList.remove('show'); setTimeout(() => alertEl.style.display = 'none', 200); }
 
-    // 💡 공지사항 관련 체크 및 닫기 함수 제거됨 (V9.8)
-
     window.onload = async () => { 
-        // 💡 공지사항 호출 제거됨
-
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
-        document.getElementById('today-date').value = `${year}-${month}-${day}`;
+        const todayStr = `${year}-${month}-${day}`;
+        document.getElementById('today-date').value = todayStr;
         
         let list = localStorage.getItem('metro_savedList'); if(list) { savedList = JSON.parse(list); updateTable(); }
         
+        // 💡 [V9.9 추가] 오늘 전송 목록 로드 및 날짜 필터링
+        let sentList = localStorage.getItem('metro_sentListToday');
+        if(sentList) {
+            let parsed = JSON.parse(sentList);
+            // 오늘 날짜인 것만 남김 (과거 데이터 자동 삭제)
+            sentTodayList = parsed.filter(item => item.sentDate === todayStr);
+            localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
+            updateSentTable();
+        }
+
         const cachedSites = localStorage.getItem('metro_sites');
         if(cachedSites) {
             const s = document.getElementById('site-select');
@@ -440,9 +475,41 @@
         }).join('') : '<tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr>';
         document.getElementById('count').innerText = savedList.length;
     }
+
+    // 💡 [V9.9 추가] 전송 목록 업데이트 함수
+    function updateSentTable() {
+        const b = document.getElementById('sent-list-body');
+        const countEl = document.getElementById('sent-count');
+        b.innerHTML = sentTodayList.length ? sentTodayList.map((r, i) => {
+            const locText = r.ho === "-" ? r.dong : `${r.dong}동 ${r.ho}호`;
+            return `<tr><td style="font-weight:700; color:var(--text-sub);">${i+1}</td>
+                <td style="text-align:left; padding-left:10px; word-break:keep-all; white-space:nowrap;">
+                    <span style="font-weight:700;">${locText}</span><span style="color:var(--success); font-weight:700; font-size:12px; background:#ecfdf5; padding:2px 6px; border-radius:4px; margin-left:4px;">${r.work}</span>
+                </td>
+                <td style="padding-left:4px; padding-right:4px;">
+                    <div style="display:flex; gap:4px; justify-content:center;">
+                        <button class="action-btn view" onclick="loadSent(${i})">상세보기</button>
+                    </div>
+                </td></tr>`;
+        }).reverse().join('') : '<tr><td colspan="3" style="padding:20px; color:var(--text-sub); font-size:13px;">오늘 전송된 내역이 없습니다.</td></tr>';
+        countEl.innerText = sentTodayList.length;
+    }
     
     async function loadLocal(i) {
         const d = savedList[i]; editingIndex = i;
+        await loadDataToForm(d);
+        document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; 
+    }
+
+    // 💡 [V9.9 추가] 전송된 데이터 상세 보기 (불러오기와 비슷하지만 수정저장 버튼 텍스트 변경 안함)
+    async function loadSent(i) {
+        const d = sentTodayList[i];
+        await loadDataToForm(d);
+        showMsg("ℹ️ 이 내역은 이미 전송이 완료된 작업입니다.");
+    }
+
+    // 💡 [V9.9 통합] 데이터를 폼에 로드하는 공통 함수
+    async function loadDataToForm(d) {
         if (d.sid) {
             if (d.sid !== currentSid) {
                 document.getElementById('site-select').value = d.sid; currentSid = d.sid; await loadDB(); 
@@ -459,11 +526,9 @@
                 imgEl.src = imgSrc; imgEl.dataset.raw = d['p' + num + '_raw'] || ""; imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; imgEl.style.display = 'block'; textEl.style.display = 'none'; 
             } else { imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.dataset.wm = "true"; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
         }
-        
         const hasExtra = [4,5,6,7,8,9,10,11,12].some(n => d['p'+n] && d['p'+n].length > 100);
         if(hasExtra) { document.getElementById('extra-photo-container').style.display = 'block'; }
-        
-        document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; autoSave(); 
+        autoSave();
     }
 
     function delLocal(i) { savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); if (editingIndex === i) clearInputs(true); else if (editingIndex > i) editingIndex--; updateTable(); }
@@ -471,12 +536,10 @@
     function clearInputs(isSaveLocal) { 
         ['dong','ho','loc','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
         document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
-        
         for(let i=1; i<=12; i++) { 
             let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; 
         }
         document.getElementById('extra-photo-container').style.display = 'none';
-        
         editingIndex = -1; document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
         if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
     }
@@ -486,8 +549,7 @@
         const d_init = getD(); if(!currentSid || !d_init.dong || !d_init.ho || !d_init.work) return showMsg("🚨 필수 정보 누락!");
         
         const btn = document.getElementById('btn-send'); 
-        btn.innerHTML = "⏳ 전송 중..."; 
-        btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
+        btn.innerHTML = "⏳ 전송 중..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
         document.getElementById('generating-badge').style.display = 'block';
         
         try {
@@ -496,7 +558,8 @@
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            d.date = `${year}-${month}-${day}`; 
+            const todayStr = `${year}-${month}-${day}`;
+            d.date = todayStr; 
 
             const payload = { 
                 targetSheetId: currentSid, record: d, pdfBase64: "", 
@@ -504,7 +567,6 @@
                 p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", 
                 p3Base64: (d.p3||"").split(',')[1]||"" 
             };
-            
             for(let i=4; i<=12; i++) {
                 payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||"";
                 payload['p'+i+'RawBase64'] = (d['p'+i+'_wm'] === "true") ? (d['p'+i+'_raw']||"").split(',')[1]||"" : "";
@@ -516,6 +578,13 @@
             document.getElementById('generating-badge').style.display = 'none';
             if(result.result==='success') { 
                 showMsg("🎉 성공적으로 전송되었습니다!"); 
+                
+                // 💡 [V9.9 추가] 성공 시 오늘 전송 목록에 추가
+                const historyRecord = { ...d, sentDate: todayStr };
+                sentTodayList.push(historyRecord);
+                localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
+                updateSentTable();
+
                 if (editingIndex > -1) { savedList.splice(editingIndex, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); }
                 clearInputs(true); updateTable(); 
             } else { showMsg("❌ 서버 오류: " + result.message); }
