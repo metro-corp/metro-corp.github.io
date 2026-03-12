@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V10.7 (수정 저장 버튼 초기 노출 오류 해결) -->
-    <title>(주)METRO R&S 현장관리 시스템 V10.7</title>
+    <!-- 💡 버전 업데이트: V10.8 (삭제 버튼 작동 오류 및 오타 완벽 해결) -->
+    <title>(주)METRO R&S 현장관리 시스템 V10.8</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -134,7 +134,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V10.7</span>
+        <span>(주)METRO R&S 현장관리 시스템 V10.8</span>
     </div>
 </header>
 
@@ -213,7 +213,6 @@
         </div>
 
         <div class="btn-group">
-            <!-- 💡 [V10.7 수정] 초기 텍스트 '임시 저장'으로 변경 -->
             <button class="btn-save" onclick="saveLocal()">💾 임시 저장</button>
             <button class="btn-send" id="btn-send" onclick="send()">🚀 최종 전송</button>
         </div>
@@ -316,7 +315,7 @@
         if(sentList) {
             let parsed = JSON.parse(sentList);
             sentTodayList = parsed.filter(item => item.sentDate === todayStr);
-            // 💡 [V10.7] Bird -> JSON 복구
+            // 💡 [V10.8] 오타 수정: Bird -> JSON
             localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
             updateSentTable();
         }
@@ -358,7 +357,7 @@
         d.sid = currentSid; 
         d.workSheet = document.getElementById('db-sheet').value; 
         d.sheetList = Array.from(document.getElementById('db-sheet').options).map(o => ({value: o.value, text: o.text}));
-        // 💡 [V10.7] Bird -> JSON 복구
+        // 💡 [V10.8] 오타 수정: Bird -> JSON
         try { localStorage.setItem('metro_autoSave', JSON.stringify(d)); } catch(e) {} 
     }
 
@@ -506,7 +505,7 @@
         if(isProcessingImage) return showMsg("⏳ 사진 처리가 진행 중입니다.");
         const d = getD(); if(!currentSid || !d.dong || !d.ho || !d.work) return showMsg("🚨 필수 정보를 입력하세요.");
         if (editingIndex > -1) { savedList[editingIndex] = d; } else { savedList.push(d); }
-        // 💡 [V10.7] Bird -> JSON 복구
+        // 💡 [V10.8] 오타 수정: Bird -> JSON
         localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); clearInputs(true); 
     }
 
@@ -574,13 +573,25 @@
         autoSave();
     }
 
+    // 💡 [V10.8 수정] 삭제 버튼 정상 작동을 위한 함수 개선
+    function delLocal(i) { 
+        savedList.splice(i, 1); 
+        // 💡 오타 수정: Bird -> JSON
+        localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
+        if (editingIndex === i) {
+            clearInputs(true); 
+        } else if (editingIndex > i) {
+            editingIndex--; 
+        }
+        updateTable(); 
+    }
+
     function clearInputs(isSaveLocal) { 
         ['dong','ho','loc','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
         document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
         for(let i=1; i<=12; i++) { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }
         document.getElementById('extra-photo-container').style.display = 'none';
         editingIndex = -1; 
-        // 💡 [V10.7 수정] 텍스트 초기화 보강
         document.querySelector('.btn-save').innerHTML = "💾 임시 저장"; 
         if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
     }
@@ -596,13 +607,14 @@
             d.date = todayStr; 
             const payload = { targetSheetId: currentSid, record: d, pdfBase64: "", p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", p3Base64: (d.p3||"").split(',')[1]||"" };
             for(let i=4; i<=12; i++) { payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||""; payload['p'+i+'RawBase64'] = (d['p'+i+'_wm'] === "true") ? (d['p'+i+'_raw']||"").split(',')[1]||"" : ""; }
-            // 💡 [V10.7] Bird -> JSON 복구
+            // 💡 오타 수정: Bird -> JSON
             const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
             const result = await response.json();
             document.getElementById('generating-badge').style.display = 'none';
             if(result.result==='success') { 
                 showMsg("🎉 성공적으로 전송되었습니다!"); 
                 const historyRecord = { ...d, sentDate: todayStr }; sentTodayList.push(historyRecord);
+                // 💡 오타 수정: Bird -> JSON
                 localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList)); updateSentTable();
                 if (editingIndex > -1) { savedList.splice(editingIndex, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); }
                 clearInputs(true); updateTable(); 
