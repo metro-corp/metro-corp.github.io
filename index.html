@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V9.9 (오늘 전송 내역 추가) -->
-    <title>(주)METRO R&S 현장관리 시스템 V9.9</title>
+    <!-- 💡 버전 업데이트: V10.1 (사진 기기 자동 저장 기능 추가) -->
+    <title>(주)METRO R&S 현장관리 시스템 V10.1</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -70,7 +70,6 @@
         .btn-toggle-extra, .btn-toggle-sent { width: 100%; padding: 14px; background: #f1f5f9; border: 1.5px solid var(--border-light); border-radius: 14px; color: var(--text-sub); font-weight: 800; font-size: 14px; margin-top: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.2s; }
         .btn-toggle-extra:hover, .btn-toggle-sent:hover { background: #e2e8f0; color: var(--primary-dark); }
         
-        /* 💡 오늘 전송 내역 전용 스타일 */
         #sent-today-container { display: none; margin-top: 15px; padding-top: 15px; border-top: 1.5px dashed var(--border-light); }
 
         .btn-group { display: flex; gap: 12px; margin-top: 25px; }
@@ -113,7 +112,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V9.9</span>
+        <span>(주)METRO R&S 현장관리 시스템 V10.1</span>
     </div>
 </header>
 
@@ -204,12 +203,10 @@
             <tbody id="list-body"><tr><td colspan="3" style="padding:30px; color:var(--text-sub); font-weight:500;">현재 임시 저장된 작업이 없습니다.</td></tr></tbody>
         </table>
 
-        <!-- 💡 [V9.9 추가] 오늘 전송 목록 토글 버튼 -->
         <button class="btn-toggle-sent" onclick="toggleSentHistory()">
             <span id="toggle-icon-sent">🔽</span> 오늘 전송 완료 목록 (<span id="sent-count">0</span>)
         </button>
 
-        <!-- 💡 [V9.9 추가] 오늘 전송 목록 테이블 영역 -->
         <div id="sent-today-container">
             <table>
                 <thead><tr><th style="width:10%">No</th><th style="width:50%">전송 완료 내역</th><th style="width:40%">상태</th></tr></thead>
@@ -228,7 +225,6 @@
 
     function toggleExtraPhotos() {
         const container = document.getElementById('extra-photo-container');
-        const icon = document.getElementById('toggle-icon-extra');
         const btnText = document.getElementById('btn-toggle-extra');
         if (container.style.display === 'block') {
             container.style.display = 'none';
@@ -239,7 +235,6 @@
         }
     }
 
-    // 💡 [V9.9 추가] 전송 목록 토글 함수
     function toggleSentHistory() {
         const container = document.getElementById('sent-today-container');
         const icon = document.getElementById('toggle-icon-sent');
@@ -276,11 +271,9 @@
         
         let list = localStorage.getItem('metro_savedList'); if(list) { savedList = JSON.parse(list); updateTable(); }
         
-        // 💡 [V9.9 추가] 오늘 전송 목록 로드 및 날짜 필터링
         let sentList = localStorage.getItem('metro_sentListToday');
         if(sentList) {
             let parsed = JSON.parse(sentList);
-            // 오늘 날짜인 것만 남김 (과거 데이터 자동 삭제)
             sentTodayList = parsed.filter(item => item.sentDate === todayStr);
             localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
             updateSentTable();
@@ -387,24 +380,54 @@
                 const img = new Image(); img.onload = () => {
                     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
                     let w = img.width, h = img.height;
+                    let finalDataUrl = "";
                     if (pId === 'p3') {
                         let max = 1000; if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
                         canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
-                        document.getElementById(pId).src = canvas.toDataURL('image/jpeg', 0.3); 
+                        finalDataUrl = canvas.toDataURL('image/jpeg', 0.3);
+                        document.getElementById(pId).src = finalDataUrl;
                     } else {
                         let targetRatio = 4 / 3; let sX = 0, sY = 0, sW = w, sH = h;
                         if (w / h > targetRatio) { sW = h * targetRatio; sX = (w - sW) / 2; } else { sH = w / targetRatio; sY = (h - sH) / 2; }
                         canvas.width = 800; canvas.height = 600; ctx.drawImage(img, sX, sY, sW, sH, 0, 0, 800, 600);
                         document.getElementById(pId).dataset.raw = canvas.toDataURL('image/jpeg', 0.4);
                         document.getElementById(pId).dataset.wm = applyWm ? "true" : "false";
-                        if(applyWm) { document.getElementById(pId).src = addWM(canvas); } else { document.getElementById(pId).src = document.getElementById(pId).dataset.raw; }
+                        if(applyWm) { 
+                            finalDataUrl = addWM(canvas);
+                            document.getElementById(pId).src = finalDataUrl;
+                        } else { 
+                            finalDataUrl = document.getElementById(pId).dataset.raw;
+                            document.getElementById(pId).src = finalDataUrl;
+                        }
                     }
+                    
+                    // 💡 [V10.1 핵심] 사진 기기 저장 로직 실행 (완료확인서 제외)
+                    if (pId !== 'p3') {
+                        saveToDevice(finalDataUrl, label);
+                    }
+
                     document.getElementById(pId).style.display='block'; txt.style.display='none';
                     txt.innerHTML = `<div style="font-size: 24px;">${pId==='p3'?'📋':'📷'}</div><span>${label}</span>`;
                     isProcessingImage = false; autoSave(); 
                 }; img.src = e.target.result;
             }; r.readAsDataURL(input.files[0]);
         }
+    }
+
+    // 💡 [V10.1 추가] 스마트폰 기기 저장(다운로드) 함수
+    function saveToDevice(dataUrl, label) {
+        const d = getD();
+        const site = d.site || "현장";
+        const unit = (d.ho === "-" ? d.dong : `${d.dong}_${d.ho}`) || "위치";
+        const work = d.work || "공종";
+        const fileName = `METRO_${site}_${unit}_${work}_${label}.jpg`;
+        
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function addWM(c) {
@@ -476,7 +499,6 @@
         document.getElementById('count').innerText = savedList.length;
     }
 
-    // 💡 [V9.9 추가] 전송 목록 업데이트 함수
     function updateSentTable() {
         const b = document.getElementById('sent-list-body');
         const countEl = document.getElementById('sent-count');
@@ -501,14 +523,12 @@
         document.querySelector('.btn-save').innerHTML = "💾 수정 저장"; 
     }
 
-    // 💡 [V9.9 추가] 전송된 데이터 상세 보기 (불러오기와 비슷하지만 수정저장 버튼 텍스트 변경 안함)
     async function loadSent(i) {
         const d = sentTodayList[i];
         await loadDataToForm(d);
         showMsg("ℹ️ 이 내역은 이미 전송이 완료된 작업입니다.");
     }
 
-    // 💡 [V9.9 통합] 데이터를 폼에 로드하는 공통 함수
     async function loadDataToForm(d) {
         if (d.sid) {
             if (d.sid !== currentSid) {
@@ -578,8 +598,6 @@
             document.getElementById('generating-badge').style.display = 'none';
             if(result.result==='success') { 
                 showMsg("🎉 성공적으로 전송되었습니다!"); 
-                
-                // 💡 [V9.9 추가] 성공 시 오늘 전송 목록에 추가
                 const historyRecord = { ...d, sentDate: todayStr };
                 sentTodayList.push(historyRecord);
                 localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
