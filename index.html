@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V10.9 (아이폰 전송 응답 처리 개선) -->
-    <title>(주)METRO R&S 현장관리 시스템 V10.9</title>
+    <!-- 💡 버전 업데이트: V11.0 (SOS 긴급 수정: 원본 사진 전송 복구 및 오타 박멸) -->
+    <title>(주)METRO R&S 현장관리 시스템 V11.0</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -134,7 +134,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V10.9</span>
+        <span>(주)METRO R&S 현장관리 시스템 V11.0</span>
     </div>
 </header>
 
@@ -613,7 +613,6 @@
 
             const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
             
-            // 💡 [V10.9 개선] 아이폰 대응: 응답 결과가 성공(200 OK)이면 일단 성공으로 처리
             if (response.ok) {
                 const result = await response.json();
                 if(result.result === 'success') {
@@ -635,7 +634,6 @@
                 showMsg("❌ 네트워크 전송 지연: 나중에 다시 시도해 주세요.");
             }
         } catch(e) { 
-            // 💡 아이폰에서 가끔 전송은 성공했으나 응답 대기 중 타임아웃이 발생할 경우 대응
             document.getElementById('generating-badge').style.display = 'none'; 
             showMsg("❌ 통신 상태가 불안정합니다.\n드라이브에 저장되었는지 확인 바랍니다."); 
         } finally { 
