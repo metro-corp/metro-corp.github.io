@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V11.1 (전송 진행 상태 상세 안내 기능 추가) -->
-    <title>(주)METRO R&S 현장관리 시스템 V11.1</title>
+    <!-- 💡 버전 업데이트: V11.3 (시공업체명 '메트로 알앤에스' 기본값 고정) -->
+    <title>(주)METRO R&S 현장관리 시스템 V11.3</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -134,7 +134,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V11.1</span>
+        <span>(주)METRO R&S 현장관리 시스템 V11.3</span>
     </div>
 </header>
 
@@ -165,15 +165,16 @@
                 </label>
             </div>
 
-            <input type="text" id="dong" placeholder="동" oninput="search()">
-            <input type="text" id="ho" placeholder="호" oninput="search()">
+            <input type="text" id="dong" placeholder="동" inputmode="numeric" oninput="if(document.querySelector('input[name=\'area-type\']:checked').value === 'private') this.value = this.value.replace(/[^0-9]/g, ''); search(); autoSave();">
+            <input type="text" id="ho" placeholder="호" inputmode="numeric" oninput="if(this.value !== '-') this.value = this.value.replace(/[^0-9]/g, ''); search(); autoSave();">
             
             <div id="search-results"></div>
             
             <input type="text" id="loc" placeholder="위치">
             <input type="text" id="work" placeholder="공종">
             <input type="text" id="type" placeholder="하자 유형">
-            <input type="text" id="contractor" placeholder="시공업체">
+            <!-- 💡 [V11.3] 기본값으로 '메트로 알앤에스' 설정 -->
+            <input type="text" id="contractor" placeholder="시공업체" value="메트로 알앤에스">
             <textarea id="desc" placeholder="상세 작업 내용을 입력하세요" class="full"></textarea>
         </div>
         
@@ -240,8 +241,8 @@
             <div class="section-title" style="border:none; margin-bottom:10px;"><span>🔍</span> 과거 작업 이력 검색</div>
             <p style="font-size:12px; color:var(--text-sub); margin-bottom:15px; margin-left:2px;">입력창과 무관하게 동/호수만으로 과거 기록을 조회합니다.</p>
             <div class="grid" style="grid-template-columns: 1fr 1fr; margin-bottom:12px;">
-                <input type="text" id="search-dong" placeholder="검색할 동">
-                <input type="text" id="search-ho" placeholder="검색할 호수">
+                <input type="text" id="search-dong" placeholder="검색할 동" inputmode="text">
+                <input type="text" id="search-ho" placeholder="검색할 호수" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
             </div>
             <button class="btn-history-search" onclick="loadHistory()">
                 <span>🔍</span> 기록 조회하기
@@ -292,9 +293,18 @@
         const dongInput = document.getElementById('dong');
         const hoInput = document.getElementById('ho');
         if (type === 'private') {
-            dongInput.placeholder = "동"; dongInput.classList.remove('full'); hoInput.style.display = "block"; if(hoInput.value === "-") hoInput.value = ""; 
+            dongInput.placeholder = "동"; 
+            dongInput.classList.remove('full'); 
+            dongInput.inputMode = "numeric";
+            dongInput.value = dongInput.value.replace(/[^0-9]/g, ''); 
+            hoInput.style.display = "block"; 
+            if(hoInput.value === "-") hoInput.value = ""; 
         } else {
-            dongInput.placeholder = "공용부 상세 위치 (예: 지하주차장)"; dongInput.classList.add('full'); hoInput.style.display = "none"; hoInput.value = "-"; 
+            dongInput.placeholder = "공용부 상세 위치 (예: 지하주차장)"; 
+            dongInput.classList.add('full'); 
+            dongInput.inputMode = "text"; 
+            hoInput.style.display = "none"; 
+            hoInput.value = "-"; 
         }
     }
 
@@ -309,6 +319,9 @@
         const todayStr = `${year}-${month}-${day}`;
         document.getElementById('today-date').value = todayStr;
         
+        // 💡 [V11.3] 시공업체 기본값 로드
+        document.getElementById('contractor').value = "메트로 알앤에스";
+
         let list = localStorage.getItem('metro_savedList'); if(list) { savedList = JSON.parse(list); updateTable(); }
         
         let sentList = localStorage.getItem('metro_sentListToday');
@@ -344,7 +357,7 @@
         if(currentSid) await loadDB();
 
         isInitialLoad = false; 
-        document.querySelectorAll('input, select, textarea').forEach(el => { 
+        document.querySelectorAll('input:not(#dong):not(#ho), select, textarea').forEach(el => { 
             el.addEventListener('input', autoSave); 
             el.addEventListener('change', autoSave); 
         });
@@ -438,7 +451,15 @@
         } else res.style.display='none';
     }
 
-    function fill(v) { ['loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; }); document.getElementById('search-results').style.display='none'; autoSave(); }
+    function fill(v) { 
+        ['loc','work','type','contractor','desc'].forEach(id => { 
+            if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; 
+        }); 
+        // 💡 [V11.3] 만약 불러온 데이터에 업체명이 없으면 기본값 유지
+        if(!document.getElementById('contractor').value) document.getElementById('contractor').value = "메트로 알앤에스";
+        document.getElementById('search-results').style.display='none'; 
+        autoSave(); 
+    }
 
     function proc(input, pId, tId, label) {
         if(input.files && input.files[0]) {
@@ -578,7 +599,12 @@
     }
 
     function clearInputs(isSaveLocal) { 
-        ['dong','ho','loc','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
+        // 💡 [V11.3] 업체명('contractor')은 초기화 목록에서 제외하거나 수동으로 다시 세팅
+        ['dong','ho','loc','type','desc'].forEach(id => { 
+            if(document.getElementById(id)) document.getElementById(id).value=''; 
+        }); 
+        document.getElementById('contractor').value = "메트로 알앤에스"; 
+
         document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
         for(let i=1; i<=12; i++) { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }
         document.getElementById('extra-photo-container').style.display = 'none';
@@ -594,7 +620,6 @@
         const btn = document.getElementById('btn-send'); 
         const badge = document.getElementById('generating-badge');
         
-        // 💡 [V11.1 추가] 전송 사진 개수 파악
         let photoCount = 0;
         for(let i=1; i<=12; i++) { if(d_init['p'+i] && d_init['p'+i].length > 100) photoCount++; }
 
@@ -620,13 +645,11 @@
                 payload['p'+i+'RawBase64'] = (d['p'+i+'_wm'] === "true") ? (d['p'+i+'_raw']||"").split(',')[1]||"" : "";
             }
 
-            // 💡 [V11.1 추가] 진행 상태 업데이트
             btn.innerHTML = "⏳ 서버 전송 중...";
             badge.innerText = "🚀 서버로 데이터 전송 중 (고해상도 이미지 포함)...";
 
             const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
             
-            // 💡 [V11.1 추가] 서버 응답 대기 및 PDF 생성 단계 안내
             btn.innerHTML = "⏳ 문서 생성 중...";
             badge.innerHTML = "🛠️ 서버에서 PDF 보고서 생성 중...<br><span style='font-size:11px;'>데이터가 많을 경우 최대 1분이 소요됩니다.</span>";
 
