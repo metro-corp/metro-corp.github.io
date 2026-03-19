@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V11.3 (시공업체명 '메트로 알앤에스' 기본값 고정) -->
-    <title>(주)METRO R&S 현장관리 시스템 V11.3</title>
+    <!-- 💡 버전 업데이트: V11.4 (임시 저장 시 필수 항목 공란 체크 강화) -->
+    <title>(주)METRO R&S 현장관리 시스템 V11.4</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -134,7 +134,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V11.3</span>
+        <span>(주)METRO R&S 현장관리 시스템 V11.4</span>
     </div>
 </header>
 
@@ -173,7 +173,6 @@
             <input type="text" id="loc" placeholder="위치">
             <input type="text" id="work" placeholder="공종">
             <input type="text" id="type" placeholder="하자 유형">
-            <!-- 💡 [V11.3] 기본값으로 '메트로 알앤에스' 설정 -->
             <input type="text" id="contractor" placeholder="시공업체" value="메트로 알앤에스">
             <textarea id="desc" placeholder="상세 작업 내용을 입력하세요" class="full"></textarea>
         </div>
@@ -319,7 +318,6 @@
         const todayStr = `${year}-${month}-${day}`;
         document.getElementById('today-date').value = todayStr;
         
-        // 💡 [V11.3] 시공업체 기본값 로드
         document.getElementById('contractor').value = "메트로 알앤에스";
 
         let list = localStorage.getItem('metro_savedList'); if(list) { savedList = JSON.parse(list); updateTable(); }
@@ -455,7 +453,6 @@
         ['loc','work','type','contractor','desc'].forEach(id => { 
             if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; 
         }); 
-        // 💡 [V11.3] 만약 불러온 데이터에 업체명이 없으면 기본값 유지
         if(!document.getElementById('contractor').value) document.getElementById('contractor').value = "메트로 알앤에스";
         document.getElementById('search-results').style.display='none'; 
         autoSave(); 
@@ -520,11 +517,33 @@
         return d;
     }
 
+    // 💡 [V11.4 수정] 필수 항목 공란 여부 체크 추가
     function saveLocal() {
         if(isProcessingImage) return showMsg("⏳ 사진 처리가 진행 중입니다.");
-        const d = getD(); if(!currentSid || !d.dong || !d.ho || !d.work) return showMsg("🚨 필수 정보를 입력하세요.");
+        const d = getD();
+        
+        // 필수 항목 및 표시 이름 정의
+        const required = {
+            'dong': '동 번호',
+            'ho': '호수',
+            'loc': '상세 위치',
+            'work': '공종',
+            'type': '하자 유형',
+            'desc': '상세 작업 내용'
+        };
+
+        if(!currentSid) return showMsg("🏢 현장을 먼저 선택하세요.");
+
+        for (const [key, label] of Object.entries(required)) {
+            if (!d[key] || d[key].trim() === "") {
+                return showMsg(`🚨 [${label}] 항목이 공란입니다. 필수 정보를 모두 입력하세요.`);
+            }
+        }
+
         if (editingIndex > -1) { savedList[editingIndex] = d; } else { savedList.push(d); }
-        localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); clearInputs(true); 
+        localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
+        updateTable(); 
+        clearInputs(true); 
     }
 
     function updateTable() {
@@ -599,7 +618,6 @@
     }
 
     function clearInputs(isSaveLocal) { 
-        // 💡 [V11.3] 업체명('contractor')은 초기화 목록에서 제외하거나 수동으로 다시 세팅
         ['dong','ho','loc','type','desc'].forEach(id => { 
             if(document.getElementById(id)) document.getElementById(id).value=''; 
         }); 
