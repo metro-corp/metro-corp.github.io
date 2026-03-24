@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V11.4 (임시 저장 시 필수 항목 공란 체크 강화) -->
-    <title>(주)METRO R&S 현장관리 시스템 V11.4</title>
+    <!-- 💡 버전 업데이트: V11.7 (마스터 시트 단일화 및 공종 자동 추출 필터링 방식) -->
+    <title>(주)METRO R&S 현장관리 시스템 V11.7</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -134,7 +134,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V11.4</span>
+        <span>(주)METRO R&S 현장관리 시스템 V11.7</span>
     </div>
 </header>
 
@@ -150,6 +150,7 @@
         <div class="section-title"><span>2</span> 작업 정보 입력</div>
         <div class="grid">
             <input type="date" id="today-date" class="full">
+            <!-- 💡 [V11.7] '공종 선택'으로 명칭 통일 및 단일 마스터 시트 내의 공종을 로드함 -->
             <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full"><option value="">현장을 먼저 선택해주세요</option></select>
             
             <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
@@ -292,18 +293,12 @@
         const dongInput = document.getElementById('dong');
         const hoInput = document.getElementById('ho');
         if (type === 'private') {
-            dongInput.placeholder = "동"; 
-            dongInput.classList.remove('full'); 
-            dongInput.inputMode = "numeric";
+            dongInput.placeholder = "동"; dongInput.classList.remove('full'); dongInput.inputMode = "numeric";
             dongInput.value = dongInput.value.replace(/[^0-9]/g, ''); 
-            hoInput.style.display = "block"; 
-            if(hoInput.value === "-") hoInput.value = ""; 
+            hoInput.style.display = "block"; if(hoInput.value === "-") hoInput.value = ""; 
         } else {
-            dongInput.placeholder = "공용부 상세 위치 (예: 지하주차장)"; 
-            dongInput.classList.add('full'); 
-            dongInput.inputMode = "text"; 
-            hoInput.style.display = "none"; 
-            hoInput.value = "-"; 
+            dongInput.placeholder = "공용부 상세 위치 (예: 지하주차장)"; dongInput.classList.add('full'); dongInput.inputMode = "text";
+            hoInput.style.display = "none"; hoInput.value = "-"; 
         }
     }
 
@@ -384,6 +379,7 @@
         } catch(e) { s.innerHTML = '<option value="">❌ 로드 실패</option>'; }
     }
 
+    // 💡 [V11.7 수정] 마스터 시트 내의 유일한 공종 목록을 추출하여 드롭다운 구성
     async function loadDB() {
         const s = document.getElementById('site-select'); currentSid = s.value; if(!currentSid) return;
         const selectText = s.options[s.selectedIndex].text;
@@ -395,8 +391,20 @@
             const r = await fetch(`${MY_GAS_URL}?targetId=${encodeURIComponent(currentSid)}&t=${new Date().getTime()}`);
             const j = await r.json();
             if(j.result==='success') {
-                cloudDB = j.data; d.innerHTML = '<option value="">📑 공종 선택</option>';
-                Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "전체_공정_마스터" && n !== "전체_공정마스터") d.innerHTML += `<option value="${n}">${n}</option>`; });
+                cloudDB = j.data; 
+                d.innerHTML = '<option value="">📑 공종 선택 (필수)</option>';
+                
+                // 마스터 시트 찾기
+                const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터");
+                if (masterKey) {
+                    const allData = cloudDB[masterKey];
+                    // '공종(work)' 컬럼에서 중복 없는 목록 추출
+                    const uniqueWorks = [...new Set(allData.map(row => row.work).filter(w => w))].sort();
+                    uniqueWorks.forEach(w => {
+                        d.innerHTML += `<option value="${w}">${w}</option>`;
+                    });
+                }
+                
                 if(currentVal) d.value = currentVal;
                 autoSave(); 
             }
@@ -434,28 +442,44 @@
         }
     }
 
+    // 💡 [V11.7 수정] 선택된 공종과 동/호를 마스터 시트 데이터에서 필터링하여 검색
     function search() {
-        const sheet = document.getElementById('db-sheet').value, d = document.getElementById('dong').value.trim(), h = document.getElementById('ho').value.trim(), res = document.getElementById('search-results');
+        const selectedWork = document.getElementById('db-sheet').value;
+        const d = document.getElementById('dong').value.trim();
+        const h = document.getElementById('ho').value.trim();
+        const res = document.getElementById('search-results');
         const isCommon = document.querySelector('input[name="area-type"]:checked').value === 'common';
-        if(!sheet || !d || (!isCommon && !h)) { res.style.display='none'; return; }
-        const matches = (cloudDB[sheet] || []).filter(v => {
+        
+        if(!selectedWork || !d || (!isCommon && !h)) { res.style.display='none'; return; }
+        
+        // 마스터 시트 키 찾기
+        const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터");
+        if (!masterKey) return;
+
+        const matches = (cloudDB[masterKey] || []).filter(v => {
+            // 공종 필터링이 최우선
+            if (String(v.work) !== selectedWork) return false;
+            
             if (isCommon) return String(v.dong).includes(d) && String(v.ho) === "-";
             return String(v.dong) === d && String(v.ho) === h;
         });
+
         if(matches.length>0) {
             let htmlStr = `<div style="position:sticky; top:0; background:rgba(240, 249, 255, 0.95); backdrop-filter:blur(5px); padding:12px 16px; font-weight:800; font-size:14px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100;"><span>🔍 내역 ${matches.length}건</span><span onclick="document.getElementById('search-results').style.display='none'" style="background:#0ea5e9; padding:6px 14px; border-radius:8px; cursor:pointer; color:#ffffff; font-weight:700;">닫기 ✕</span></div>`;
-            matches.forEach(v => { htmlStr += `<div class="result-item" onclick='fill(${JSON.stringify(v).replace(/'/g,"&apos;")})'><strong>📍 ${v.loc}</strong><span class="ellipsis">📝 ${v.desc}</span></div>`; });
+            matches.forEach(v => { 
+                htmlStr += `<div class="result-item" onclick='fill(${JSON.stringify(v).replace(/'/g,"&apos;")})'>
+                    <strong>📍 ${v.loc}</strong>
+                    <span class="ellipsis">📝 ${v.desc}</span>
+                </div>`; 
+            });
             res.innerHTML = htmlStr; res.style.display='block';
         } else res.style.display='none';
     }
 
     function fill(v) { 
-        ['loc','work','type','contractor','desc'].forEach(id => { 
-            if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; 
-        }); 
+        ['loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; }); 
         if(!document.getElementById('contractor').value) document.getElementById('contractor').value = "메트로 알앤에스";
-        document.getElementById('search-results').style.display='none'; 
-        autoSave(); 
+        document.getElementById('search-results').style.display='none'; autoSave(); 
     }
 
     function proc(input, pId, tId, label) {
@@ -517,33 +541,17 @@
         return d;
     }
 
-    // 💡 [V11.4 수정] 필수 항목 공란 여부 체크 추가
     function saveLocal() {
         if(isProcessingImage) return showMsg("⏳ 사진 처리가 진행 중입니다.");
         const d = getD();
-        
-        // 필수 항목 및 표시 이름 정의
-        const required = {
-            'dong': '동 번호',
-            'ho': '호수',
-            'loc': '상세 위치',
-            'work': '공종',
-            'type': '하자 유형',
-            'desc': '상세 작업 내용'
-        };
-
+        const required = { 'dong': '동 번호', 'ho': '호수', 'loc': '상세 위치', 'work': '공종', 'type': '하자 유형', 'desc': '상세 작업 내용' };
         if(!currentSid) return showMsg("🏢 현장을 먼저 선택하세요.");
-
+        if(!document.getElementById('db-sheet').value) return showMsg("📑 공종을 먼저 선택하세요.");
         for (const [key, label] of Object.entries(required)) {
-            if (!d[key] || d[key].trim() === "") {
-                return showMsg(`🚨 [${label}] 항목이 공란입니다. 필수 정보를 모두 입력하세요.`);
-            }
+            if (!d[key] || d[key].trim() === "") return showMsg(`🚨 [${label}] 항목이 공란입니다. 필수 정보를 모두 입력하세요.`);
         }
-
         if (editingIndex > -1) { savedList[editingIndex] = d; } else { savedList.push(d); }
-        localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
-        updateTable(); 
-        clearInputs(true); 
+        localStorage.setItem('metro_savedList', JSON.stringify(savedList)); updateTable(); clearInputs(true); 
     }
 
     function updateTable() {
@@ -611,93 +619,46 @@
     }
 
     function delLocal(i) { 
-        savedList.splice(i, 1); 
-        localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
-        if (editingIndex === i) { clearInputs(true); } else if (editingIndex > i) { editingIndex--; }
+        savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
+        if (editingIndex === i) clearInputs(true); else if (editingIndex > i) editingIndex--;
         updateTable(); 
     }
 
     function clearInputs(isSaveLocal) { 
-        ['dong','ho','loc','type','desc'].forEach(id => { 
-            if(document.getElementById(id)) document.getElementById(id).value=''; 
-        }); 
+        ['dong','ho','loc','type','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
         document.getElementById('contractor').value = "메트로 알앤에스"; 
-
         document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
         for(let i=1; i<=12; i++) { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }
         document.getElementById('extra-photo-container').style.display = 'none';
-        editingIndex = -1; 
-        document.getElementById('btn-save').innerHTML = "💾 임시 저장"; 
-        if(isSaveLocal) { autoSave(); } else { localStorage.removeItem('metro_autoSave'); }
+        editingIndex = -1; document.getElementById('btn-save').innerHTML = "💾 임시 저장"; 
+        if(isSaveLocal) autoSave(); else localStorage.removeItem('metro_autoSave');
     }
 
     async function send() {
         if(isProcessingImage) return showMsg("⏳ 사진 처리가 진행 중입니다.");
         const d_init = getD(); if(!currentSid || !d_init.dong || !d_init.ho || !d_init.work) return showMsg("🚨 필수 정보 누락!");
-        
-        const btn = document.getElementById('btn-send'); 
-        const badge = document.getElementById('generating-badge');
-        
-        let photoCount = 0;
-        for(let i=1; i<=12; i++) { if(d_init['p'+i] && d_init['p'+i].length > 100) photoCount++; }
-
-        btn.innerHTML = "⏳ 전송 준비 중..."; 
-        btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
-        badge.innerText = `📦 ${photoCount}장의 이미지 패키징 중...`;
-        badge.style.display = 'block';
-        
+        const btn = document.getElementById('btn-send'), badge = document.getElementById('generating-badge');
+        let photoCount = 0; for(let i=1; i<=12; i++) { if(d_init['p'+i] && d_init['p'+i].length > 100) photoCount++; }
+        btn.innerHTML = "⏳ 전송 준비 중..."; btn.style.pointerEvents = "none"; btn.style.opacity = "0.8";
+        badge.innerText = `📦 ${photoCount}장의 이미지 패키징 중...`; badge.style.display = 'block';
         try {
-            const d = getD(); 
-            const now = new Date(); 
-            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-            d.date = todayStr; 
-
-            const payload = { 
-                targetSheetId: currentSid, record: d, pdfBase64: "", 
-                p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", 
-                p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", 
-                p3Base64: (d.p3||"").split(',')[1]||"" 
-            };
-            for(let i=4; i<=12; i++) {
-                payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||"";
-                payload['p'+i+'RawBase64'] = (d['p'+i+'_wm'] === "true") ? (d['p'+i+'_raw']||"").split(',')[1]||"" : "";
-            }
-
-            btn.innerHTML = "⏳ 서버 전송 중...";
-            badge.innerText = "🚀 서버로 데이터 전송 중 (고해상도 이미지 포함)...";
-
+            const d = getD(); const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; d.date = todayStr; 
+            const payload = { targetSheetId: currentSid, record: d, pdfBase64: "", p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", p3Base64: (d.p3||"").split(',')[1]||"" };
+            for(let i=4; i<=12; i++) { payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||""; payload['p'+i+'RawBase64'] = (d['p'+i+'_wm'] === "true") ? (d['p'+i+'_raw']||"").split(',')[1]||"" : ""; }
+            btn.innerHTML = "⏳ 서버 전송 중..."; badge.innerText = "🚀 서버로 데이터 전송 중...";
             const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
-            
-            btn.innerHTML = "⏳ 문서 생성 중...";
-            badge.innerHTML = "🛠️ 서버에서 PDF 보고서 생성 중...<br><span style='font-size:11px;'>데이터가 많을 경우 최대 1분이 소요됩니다.</span>";
-
+            btn.innerHTML = "⏳ 문서 생성 중..."; badge.innerHTML = "🛠️ 서버에서 PDF 보고서 생성 중...";
             if (response.ok) {
                 const result = await response.json();
                 if(result.result === 'success') {
                     showMsg("🎉 성공적으로 전송되었습니다!"); 
-                    const historyRecord = { ...d, sentDate: todayStr }; 
-                    sentTodayList.push(historyRecord);
-                    localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList)); 
-                    updateSentTable();
-                    if (editingIndex > -1) { 
-                        savedList.splice(editingIndex, 1); 
-                        localStorage.setItem('metro_savedList', JSON.stringify(savedList)); 
-                    }
-                    clearInputs(true); 
-                    updateTable(); 
-                } else {
-                    showMsg("❌ 서버 처리 오류: " + (result.message || "알 수 없는 오류"));
-                }
-            } else {
-                showMsg("❌ 네트워크 전송 지연: 나중에 다시 시도해 주세요.");
-            }
-        } catch(e) { 
-            showMsg("❌ 통신 상태가 불안정합니다.\n드라이브에 저장되었는지 확인 바랍니다."); 
-        } finally { 
-            badge.style.display = 'none';
-            badge.innerText = "🚀 전송 준비 중...";
-            btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; 
-        }
+                    const historyRecord = { ...d, sentDate: todayStr }; sentTodayList.push(historyRecord);
+                    localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList)); updateSentTable();
+                    if (editingIndex > -1) { savedList.splice(editingIndex, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); }
+                    clearInputs(true); updateTable(); 
+                } else showMsg("❌ 서버 오류: " + result.message);
+            } else showMsg("❌ 네트워크 전송 지연 발생");
+        } catch(e) { showMsg("❌ 통신 상태가 불안정합니다."); } finally { badge.style.display = 'none'; btn.innerHTML = "🚀 최종 전송"; btn.style.pointerEvents = "auto"; btn.style.opacity = "1"; }
     }
 </script>
 </body>
