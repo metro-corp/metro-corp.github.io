@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V12.0 (현장별 마스터 시트 공종 로드 로직 최적화) -->
-    <title>(주)METRO R&S 현장관리 시스템 V12.0</title>
+    <!-- 💡 버전 업데이트: V12.1 (로딩 중 공종 선택창 비활성화 및 로직 안정화) -->
+    <title>(주)METRO R&S 현장관리 시스템 V12.1</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -48,6 +48,7 @@
         textarea { resize: vertical; min-height: 100px; }
         #site-select { font-weight: 700; color: var(--accent-hover); background-color: #f0f9ff; border-color: #bae6fd; font-size: 16px; }
         #db-sheet { font-weight: 700; color: var(--success); background-color: #ecfdf5; border-color: #a7f3d0; }
+        #db-sheet:disabled { background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
 
         .toggle-btn-group { display: flex; gap: 10px; background: var(--input-bg); padding: 8px; border-radius: 14px; border: 1.5px solid var(--border-light); }
         .toggle-btn-group label { flex: 1; text-align: center; padding: 10px; font-weight: 700; font-size: 14px; color: var(--text-sub); cursor: pointer; border-radius: 10px; transition: all 0.2s; }
@@ -134,7 +135,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V12.0</span>
+        <span>(주)METRO R&S 현장관리 시스템 V12.1</span>
     </div>
 </header>
 
@@ -150,8 +151,10 @@
         <div class="section-title"><span>2</span> 작업 정보 입력</div>
         <div class="grid">
             <input type="date" id="today-date" class="full">
-            <!-- 💡 [V12.0] 현장 시트 내의 '전체_공정_마스터'에서 추출된 공종 목록 로드 -->
-            <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full"><option value="">현장을 먼저 선택해주세요</option></select>
+            <!-- 💡 [V12.1] 로딩 중 비활성화 상태로 시작 -->
+            <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full" disabled>
+                <option value="">현장을 먼저 선택해주세요</option>
+            </select>
             
             <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
             
@@ -372,14 +375,21 @@
         } catch(e) { s.innerHTML = '<option value="">❌ 로드 실패</option>'; }
     }
 
-    // 💡 [V12.0 핵심] 현장 시트의 '전체_공정_마스터'에서 공종 목록을 안전하게 추출
+    // 💡 [V12.1 수정] 로딩 중 비활성화 및 마스터 시트 데이터 동기화 안정화
     async function loadDB() {
-        const s = document.getElementById('site-select'); currentSid = s.value; if(!currentSid) return;
+        const s = document.getElementById('site-select'); 
+        currentSid = s.value; 
+        if(!currentSid) return;
+        
         const selectText = s.options[s.selectedIndex].text;
         document.getElementById('site').value = selectText;
         const d = document.getElementById('db-sheet'); 
         const currentVal = d.value;
-        if(!isInitialLoad) d.innerHTML = '<option value="">⏳ 로딩 중...</option>';
+
+        // 로딩 시작: 창 잠금
+        d.disabled = true;
+        d.innerHTML = '<option value="">⏳ 현장 데이터 동기화 중...</option>';
+
         try {
             const r = await fetch(`${MY_GAS_URL}?targetId=${encodeURIComponent(currentSid)}&t=${new Date().getTime()}`);
             const j = await r.json();
@@ -387,7 +397,7 @@
                 cloudDB = j.data; 
                 d.innerHTML = '<option value="">📑 공종 선택 (필수)</option>';
                 
-                // 💡 [V12.0] 현장 시트 내부에서 마스터 시트 탭을 정확히 타겟팅
+                // 해당 현장 시트 내부에서 마스터 시트 탭을 정확히 타겟팅
                 const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터" || k === "군산_전체공정");
                 if (masterKey) {
                     const allData = cloudDB[masterKey];
@@ -397,14 +407,21 @@
                         d.innerHTML += `<option value="${w}">${w}</option>`;
                     });
                 } else {
-                   // 마스터 탭을 못 찾은 경우에만 예외적으로 탭 이름들을 표시 (백업)
+                   // 마스터 탭을 못 찾은 경우에만 예외적으로 탭 이름들을 표시
                    Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "통합_작업기록") d.innerHTML += `<option value="${n}">${n}</option>`; });
                 }
                 
                 if(currentVal && Array.from(d.options).some(o => o.value === currentVal)) d.value = currentVal;
+                
+                // 로딩 성공: 잠금 해제
+                d.disabled = false;
                 autoSave(); 
+            } else {
+                d.innerHTML = '<option value="">❌ 데이터 로드 오류</option>';
             }
-        } catch(e) { d.innerHTML = '<option value="">❌ 실패</option>'; }
+        } catch(e) { 
+            d.innerHTML = '<option value="">❌ 네트워크 연결 실패</option>'; 
+        }
     }
 
     async function loadHistory() {
