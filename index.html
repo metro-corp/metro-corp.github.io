@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V11.7 (마스터 시트 단일화 및 공종 자동 추출 필터링 방식) -->
-    <title>(주)METRO R&S 현장관리 시스템 V11.7</title>
+    <!-- 💡 버전 업데이트: V11.8 (추가 사진 워터마크 제거 및 전송 용량 최적화) -->
+    <title>(주)METRO R&S 현장관리 시스템 V11.8</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -134,7 +134,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V11.7</span>
+        <span>(주)METRO R&S 현장관리 시스템 V11.8</span>
     </div>
 </header>
 
@@ -150,7 +150,6 @@
         <div class="section-title"><span>2</span> 작업 정보 입력</div>
         <div class="grid">
             <input type="date" id="today-date" class="full">
-            <!-- 💡 [V11.7] '공종 선택'으로 명칭 통일 및 단일 마스터 시트 내의 공종을 로드함 -->
             <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full"><option value="">현장을 먼저 선택해주세요</option></select>
             
             <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
@@ -312,11 +311,8 @@
         const day = String(now.getDate()).padStart(2, '0');
         const todayStr = `${year}-${month}-${day}`;
         document.getElementById('today-date').value = todayStr;
-        
         document.getElementById('contractor').value = "메트로 알앤에스";
-
         let list = localStorage.getItem('metro_savedList'); if(list) { savedList = JSON.parse(list); updateTable(); }
-        
         let sentList = localStorage.getItem('metro_sentListToday');
         if(sentList) {
             let parsed = JSON.parse(sentList);
@@ -324,14 +320,12 @@
             localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
             updateSentTable();
         }
-
         const cachedSites = localStorage.getItem('metro_sites');
         if(cachedSites) {
             const s = document.getElementById('site-select');
             s.innerHTML = `<option value="">🏢 현장을 선택해주세요</option>`;
             JSON.parse(cachedSites).forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`);
         }
-
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
             let d = JSON.parse(auto);
@@ -345,10 +339,8 @@
                 if(d.workSheet) document.getElementById('db-sheet').value = d.workSheet; 
             }
         }
-
         await getSites(); 
         if(currentSid) await loadDB();
-
         isInitialLoad = false; 
         document.querySelectorAll('input:not(#dong):not(#ho), select, textarea').forEach(el => { 
             el.addEventListener('input', autoSave); 
@@ -379,7 +371,6 @@
         } catch(e) { s.innerHTML = '<option value="">❌ 로드 실패</option>'; }
     }
 
-    // 💡 [V11.7 수정] 마스터 시트 내의 유일한 공종 목록을 추출하여 드롭다운 구성
     async function loadDB() {
         const s = document.getElementById('site-select'); currentSid = s.value; if(!currentSid) return;
         const selectText = s.options[s.selectedIndex].text;
@@ -391,21 +382,9 @@
             const r = await fetch(`${MY_GAS_URL}?targetId=${encodeURIComponent(currentSid)}&t=${new Date().getTime()}`);
             const j = await r.json();
             if(j.result==='success') {
-                cloudDB = j.data; 
-                d.innerHTML = '<option value="">📑 공종 선택 (필수)</option>';
-                
-                // 마스터 시트 찾기
-                const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터");
-                if (masterKey) {
-                    const allData = cloudDB[masterKey];
-                    // '공종(work)' 컬럼에서 중복 없는 목록 추출
-                    const uniqueWorks = [...new Set(allData.map(row => row.work).filter(w => w))].sort();
-                    uniqueWorks.forEach(w => {
-                        d.innerHTML += `<option value="${w}">${w}</option>`;
-                    });
-                }
-                
-                if(currentVal) d.value = currentVal;
+                cloudDB = j.data; d.innerHTML = '<option value="">📑 공종 선택 (필수)</option>';
+                Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "통합_작업기록" && n !== "전체_공정_마스터" && n !== "전체_공정마스터") d.innerHTML += `<option value="${n}">${n}</option>`; });
+                if(currentVal && cloudDB[currentVal]) d.value = currentVal;
                 autoSave(); 
             }
         } catch(e) { d.innerHTML = '<option value="">❌ 실패</option>'; }
@@ -416,12 +395,10 @@
         const ho = document.getElementById('search-ho').value.trim();
         if(!currentSid) return showMsg("🏢 현장을 먼저 선택하세요.");
         if(!dong) return showMsg("🔢 검색할 동 번호를 입력하세요.");
-
         const listBody = document.getElementById('history-list-body');
         listBody.innerHTML = '<tr><td colspan="3" style="padding:40px;">⏳ 서버에서 기록을 찾는 중...</td></tr>';
         document.getElementById('history-modal').style.display = 'flex';
         setTimeout(() => document.getElementById('history-modal').classList.add('show'), 10);
-
         try {
             const r = await fetch(`${MY_GAS_URL}?mode=getHistory&targetId=${currentSid}&dong=${encodeURIComponent(dong)}&ho=${encodeURIComponent(ho)}&t=${Date.now()}`);
             const j = await r.json();
@@ -442,35 +419,18 @@
         }
     }
 
-    // 💡 [V11.7 수정] 선택된 공종과 동/호를 마스터 시트 데이터에서 필터링하여 검색
     function search() {
-        const selectedWork = document.getElementById('db-sheet').value;
-        const d = document.getElementById('dong').value.trim();
-        const h = document.getElementById('ho').value.trim();
-        const res = document.getElementById('search-results');
+        const sheet = document.getElementById('db-sheet').value, d = document.getElementById('dong').value.trim(), h = document.getElementById('ho').value.trim(), res = document.getElementById('search-results');
         const isCommon = document.querySelector('input[name="area-type"]:checked').value === 'common';
-        
-        if(!selectedWork || !d || (!isCommon && !h)) { res.style.display='none'; return; }
-        
-        // 마스터 시트 키 찾기
-        const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터");
-        if (!masterKey) return;
-
-        const matches = (cloudDB[masterKey] || []).filter(v => {
-            // 공종 필터링이 최우선
-            if (String(v.work) !== selectedWork) return false;
-            
+        if(!sheet || !d || (!isCommon && !h)) { res.style.display='none'; return; }
+        const matches = (cloudDB[sheet] || []).filter(v => {
             if (isCommon) return String(v.dong).includes(d) && String(v.ho) === "-";
             return String(v.dong) === d && String(v.ho) === h;
         });
-
         if(matches.length>0) {
             let htmlStr = `<div style="position:sticky; top:0; background:rgba(240, 249, 255, 0.95); backdrop-filter:blur(5px); padding:12px 16px; font-weight:800; font-size:14px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100;"><span>🔍 내역 ${matches.length}건</span><span onclick="document.getElementById('search-results').style.display='none'" style="background:#0ea5e9; padding:6px 14px; border-radius:8px; cursor:pointer; color:#ffffff; font-weight:700;">닫기 ✕</span></div>`;
             matches.forEach(v => { 
-                htmlStr += `<div class="result-item" onclick='fill(${JSON.stringify(v).replace(/'/g,"&apos;")})'>
-                    <strong>📍 ${v.loc}</strong>
-                    <span class="ellipsis">📝 ${v.desc}</span>
-                </div>`; 
+                htmlStr += `<div class="result-item" onclick='fill(${JSON.stringify(v).replace(/'/g,"&apos;")})'><strong>📍 ${v.loc}</strong><span class="ellipsis">📝 ${v.desc}</span></div>`; 
             });
             res.innerHTML = htmlStr; res.style.display='block';
         } else res.style.display='none';
@@ -482,9 +442,12 @@
         document.getElementById('search-results').style.display='none'; autoSave(); 
     }
 
+    // 💡 [V11.8 수정] 워터마크 적용 범위 제약 (1, 2번 슬롯만 적용)
     function proc(input, pId, tId, label) {
         if(input.files && input.files[0]) {
-            let applyWm = (pId !== 'p3');
+            // 💡 1번(작업 전), 2번(작업 후)만 워터마크 적용, 나머지는 원본 전송
+            let applyWm = (pId === 'p1' || pId === 'p2');
+
             isProcessingImage = true; const txt = document.getElementById(tId);
             txt.innerHTML = "<div style='font-size: 24px;'>⏳</div><span>처리중...</span>";
             txt.style.display = 'block'; document.getElementById(pId).style.display = 'none';
@@ -643,9 +606,23 @@
         badge.innerText = `📦 ${photoCount}장의 이미지 패키징 중...`; badge.style.display = 'block';
         try {
             const d = getD(); const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; d.date = todayStr; 
-            const payload = { targetSheetId: currentSid, record: d, pdfBase64: "", p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", p3Base64: (d.p3||"").split(',')[1]||"" };
-            for(let i=4; i<=12; i++) { payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||""; payload['p'+i+'RawBase64'] = (d['p'+i+'_wm'] === "true") ? (d['p'+i+'_raw']||"").split(',')[1]||"" : ""; }
-            btn.innerHTML = "⏳ 서버 전송 중..."; badge.innerText = "🚀 서버로 데이터 전송 중...";
+            
+            // 💡 [V11.8 수정] 1, 2번 사진은 합성본+원본 모두 전송, 3~12번은 워터마크 없는 원본만 전송하여 용량 절감
+            const payload = { 
+                targetSheetId: currentSid, record: d, pdfBase64: "", 
+                p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_raw||"").split(',')[1]||"", 
+                p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_raw||"").split(',')[1]||"", 
+                p3Base64: (d.p3||"").split(',')[1]||"" 
+            };
+            
+            // 추가 사진 9칸 처리
+            for(let i=4; i<=12; i++) {
+                payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||"";
+                // 워터마크가 적용되지 않은 사진이므로 Raw 데이터를 중복으로 보내지 않음 (전송량 절반 감소)
+                payload['p'+i+'RawBase64'] = ""; 
+            }
+
+            btn.innerHTML = "⏳ 서버 전송 중..."; badge.innerText = "🚀 서버로 데이터 전송 중 (용량 최적화 적용)...";
             const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
             btn.innerHTML = "⏳ 문서 생성 중..."; badge.innerHTML = "🛠️ 서버에서 PDF 보고서 생성 중...";
             if (response.ok) {
