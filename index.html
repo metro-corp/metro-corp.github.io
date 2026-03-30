@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V12.3 (서버 V7.6 연동: 모든 파일명 고유 번호 통합 규칙 적용 및 로딩 보호) -->
-    <title>(주)METRO R&S 현장관리 시스템 V12.3</title>
+    <!-- 💡 버전 업데이트: V12.4 (긴급 수정: 초기 로딩 스크립트 오류 해결 및 현장 선택 복구) -->
+    <title>(주)METRO R&S 현장관리 시스템 V12.4</title>
     
     <script>
         var userAgent = navigator.userAgent.toLowerCase();
@@ -135,7 +135,7 @@
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V12.3</span>
+        <span>(주)METRO R&S 현장관리 시스템 V12.4</span>
     </div>
 </header>
 
@@ -152,14 +152,12 @@
         <div class="grid">
             <input type="date" id="today-date" class="full">
             
-            <!-- 💡 [V12.3] 공종 로딩 중에는 조작이 불가능하도록 설정 -->
             <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full" disabled>
                 <option value="">현장을 먼저 선택해주세요</option>
             </select>
             
             <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
             
-            <!-- 💡 [V12.3] 마스터 시트의 고유 번호를 임시 보관하는 숨겨진 필드 -->
             <input type="hidden" id="task-no" value="">
 
             <div class="full toggle-btn-group">
@@ -320,13 +318,21 @@
         const todayStr = `${year}-${month}-${day}`;
         document.getElementById('today-date').value = todayStr;
         document.getElementById('contractor').value = "메트로 알앤에스";
-        let list = localStorage.getItem('metro_savedList'); if(list) { savedList = JSON.parse(list); updateTable(); }
+        
+        let list = localStorage.getItem('metro_savedList'); 
+        if(list) { savedList = JSON.parse(list); updateTable(); }
+        
+        // 💡 [V12.4] 초기 로딩 시 작성되었던 문법 오류 긴급 수정
         let sentList = localStorage.getItem('metro_sentListToday');
         if(sentList) {
-            let parsed = JSON.parse(sentTodayList = parsed.filter(item => item.sentDate === todayStr));
-            localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
-            updateSentTable();
+            try {
+                let parsed = JSON.parse(sentList);
+                sentTodayList = parsed.filter(item => item.sentDate === todayStr);
+                localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
+                updateSentTable();
+            } catch(e) { console.error("전송 리스트 복구 오류:", e); }
         }
+
         const cachedSites = localStorage.getItem('metro_sites');
         if(cachedSites) {
             const s = document.getElementById('site-select');
@@ -335,19 +341,26 @@
         }
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
-            let d = JSON.parse(auto);
-            if(d.sid) { 
-                document.getElementById('site-select').value = d.sid; currentSid = d.sid; 
-                if(d.site) document.getElementById('site').value = d.site; 
-                if(d.sheetList) {
-                    const dbSheet = document.getElementById('db-sheet');
-                    dbSheet.innerHTML = d.sheetList.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+            try {
+                let d = JSON.parse(auto);
+                if(d.sid) { 
+                    currentSid = d.sid; 
+                    if(d.site) document.getElementById('site').value = d.site; 
+                    if(d.sheetList) {
+                        const dbSheet = document.getElementById('db-sheet');
+                        dbSheet.innerHTML = d.sheetList.map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+                    }
+                    if(d.workSheet) document.getElementById('db-sheet').value = d.workSheet; 
                 }
-                if(d.workSheet) document.getElementById('db-sheet').value = d.workSheet; 
-            }
+            } catch(e) {}
         }
+
         await getSites(); 
-        if(currentSid) await loadDB();
+        if(currentSid) {
+            document.getElementById('site-select').value = currentSid;
+            await loadDB();
+        }
+
         isInitialLoad = false; 
         document.querySelectorAll('input:not(#dong):not(#ho), select, textarea').forEach(el => { 
             el.addEventListener('input', autoSave); 
@@ -386,7 +399,6 @@
         const d = document.getElementById('db-sheet'); 
         const currentVal = d.value;
 
-        // 💡 [V12.3] 데이터 로딩 보호 장치 작동
         d.disabled = true;
         d.innerHTML = '<option value="">⏳ 현장 데이터 동기화 중...</option>';
 
@@ -396,29 +408,18 @@
             if(j.result==='success') {
                 cloudDB = j.data; 
                 d.innerHTML = '<option value="">📑 공종 선택 (필수)</option>';
-                
-                // 해당 현장 시트 내부에서 마스터 시트 탭을 정확히 타겟팅
                 const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터" || k === "군산_전체공정");
                 if (masterKey) {
                     const allData = cloudDB[masterKey];
-                    // '공종(work)' 필드에서 중복 없는 실제 목록 추출
                     const uniqueWorks = [...new Set(allData.map(row => row.work).filter(w => w))].sort();
-                    uniqueWorks.forEach(w => {
-                        d.innerHTML += `<option value="${w}">${w}</option>`;
-                    });
+                    uniqueWorks.forEach(w => { d.innerHTML += `<option value="${w}">${w}</option>`; });
                 } else {
-                   // 마스터 탭을 못 찾은 경우에만 예외적으로 탭 이름들을 표시
                    Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "통합_작업기록") d.innerHTML += `<option value="${n}">${n}</option>`; });
                 }
-                
                 if(currentVal && Array.from(d.options).some(o => o.value === currentVal)) d.value = currentVal;
-                
-                // 로딩 성공: 잠금 해제
                 d.disabled = false;
                 autoSave(); 
-            } else {
-                d.innerHTML = '<option value="">❌ 데이터 로드 오류</option>';
-            }
+            } else { d.innerHTML = '<option value="">❌ 데이터 로드 오류</option>'; }
         } catch(e) { d.innerHTML = '<option value="">❌ 네트워크 연결 실패</option>'; }
     }
 
@@ -465,7 +466,6 @@
         if(matches.length>0) {
             let htmlStr = `<div style="position:sticky; top:0; background:rgba(240, 249, 255, 0.95); backdrop-filter:blur(5px); padding:12px 16px; font-weight:800; font-size:14px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100;"><span>🔍 내역 ${matches.length}건</span><span onclick="document.getElementById('search-results').style.display='none'" style="background:#0ea5e9; padding:6px 14px; border-radius:8px; cursor:pointer; color:#ffffff; font-weight:700;">닫기 ✕</span></div>`;
             matches.forEach(v => { 
-                // 💡 [V12.3] 검색 결과 리스트에 번호 뱃지 표시
                 let noBadge = v.no ? `<span style="color:#64748b; font-size:11px; border:1px solid #cbd5e1; padding:1px 4px; border-radius:4px; margin-right:6px; background:#f8fafc;">No.${v.no}</span>` : '';
                 htmlStr += `<div class="result-item" onclick='fill(${JSON.stringify(v).replace(/'/g,"&apos;")})'><strong>${noBadge}📍 ${v.loc}</strong><span class="ellipsis">📝 ${v.desc}</span></div>`; 
             });
@@ -475,7 +475,6 @@
 
     function fill(v) { 
         ['loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; }); 
-        // 💡 [V12.3] 고유 번호 추출하여 숨겨진 필드에 저장
         if(document.getElementById('task-no')) document.getElementById('task-no').value = v.no || '';
         if(!document.getElementById('contractor').value) document.getElementById('contractor').value = "메트로 알앤에스";
         document.getElementById('search-results').style.display='none'; autoSave(); 
@@ -483,7 +482,6 @@
 
     function proc(input, pId, tId, label) {
         if(input.files && input.files[0]) {
-            // 💡 [V12.3] 1, 2번(작업 전/후)만 워터마크 적용, 나머지는 원본 전송
             let applyWm = (pId === 'p1' || pId === 'p2');
             isProcessingImage = true; const txt = document.getElementById(tId);
             txt.innerHTML = "<div style='font-size: 24px;'>⏳</div><span>처리중...</span>";
