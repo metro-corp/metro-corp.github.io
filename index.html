@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V12.4 (긴급 수정: 초기 로딩 스크립트 오류 해결 및 현장 선택 복구) -->
-    <title>(주)METRO R&S 현장관리 시스템 V12.4</title>
+    <!-- 💡 버전 업데이트: V12.5 (본사 메인관리 통합_작업기록 마지막 열 고유번호 기록 대응) -->
+    <title>(주)METRO R&S 현장관리 시스템 V12.5</title>
     
     <script>
+        // 카카오톡 브라우저 강제 이탈 처리 (파일 업로드 및 세션 유지 위함)
         var userAgent = navigator.userAgent.toLowerCase();
         if (userAgent.indexOf("kakaotalk") !== -1) {
             location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
@@ -104,6 +105,7 @@
 </head>
 <body>
 
+<!-- 커스텀 알림창 -->
 <div id="custom-alert">
     <div class="custom-alert-box">
         <div class="custom-alert-msg" id="alert-msg">메시지 내용</div>
@@ -111,6 +113,7 @@
     </div>
 </div>
 
+<!-- 과거 이력 조회 모달 -->
 <div id="history-modal">
     <div class="custom-alert-box" style="display:flex; flex-direction:column; max-height:85vh; width:95%;">
         <div style="background:var(--primary-dark); color:white; padding:18px; font-weight:900; font-size:17px; border-radius:24px 24px 0 0;">🔍 과거 작업 이력 결과</div>
@@ -130,12 +133,13 @@
     </div>
 </div>
 
+<!-- 하단 전송 상태 뱃지 -->
 <div id="generating-badge">🚀 전송 준비 중...</div>
 
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V12.4</span>
+        <span>(주)METRO R&S 현장관리 시스템 V12.5</span>
     </div>
 </header>
 
@@ -152,12 +156,14 @@
         <div class="grid">
             <input type="date" id="today-date" class="full">
             
+            <!-- 공종 선택창 (데이터 동기화 완료 전까지 비활성화) -->
             <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full" disabled>
                 <option value="">현장을 먼저 선택해주세요</option>
             </select>
             
             <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
             
+            <!-- 💡 [V12.5] 마스터 시트 고유 번호를 서버로 넘기기 위한 숨겨진 필드 -->
             <input type="hidden" id="task-no" value="">
 
             <div class="full toggle-btn-group">
@@ -174,6 +180,7 @@
             <input type="text" id="dong" placeholder="동" inputmode="numeric" oninput="if(document.querySelector('input[name=\'area-type\']:checked').value === 'private') this.value = this.value.replace(/[^0-9]/g, ''); search(); autoSave();">
             <input type="text" id="ho" placeholder="호" inputmode="numeric" oninput="if(this.value !== '-') this.value = this.value.replace(/[^0-9]/g, ''); search(); autoSave();">
             
+            <!-- 실시간 검색 결과 팝업 -->
             <div id="search-results"></div>
             
             <input type="text" id="loc" placeholder="위치">
@@ -224,6 +231,7 @@
         </div>
     </div>
 
+    <!-- 리스트 및 검색 섹션 -->
     <div class="section">
         <div class="section-title"><span>목록</span> 임시 저장 내역 (<span id="count" style="color:var(--accent);">0</span>건)</div>
         <table>
@@ -266,25 +274,15 @@
     function toggleExtraPhotos() {
         const container = document.getElementById('extra-photo-container');
         const btnText = document.getElementById('btn-toggle-extra');
-        if (container.style.display === 'block') {
-            container.style.display = 'none';
-            btnText.innerHTML = '<span>➕</span> 추가 사진 등록 (9칸)';
-        } else {
-            container.style.display = 'block';
-            btnText.innerHTML = '<span>➖</span> 추가 사진 접기';
-        }
+        if (container.style.display === 'block') { container.style.display = 'none'; btnText.innerHTML = '<span>➕</span> 추가 사진 등록 (9칸)'; } 
+        else { container.style.display = 'block'; btnText.innerHTML = '<span>➖</span> 추가 사진 접기'; }
     }
 
     function toggleSentHistory() {
         const container = document.getElementById('sent-today-container');
         const icon = document.getElementById('toggle-icon-sent');
-        if (container.style.display === 'block') {
-            container.style.display = 'none';
-            icon.innerText = '🔽';
-        } else {
-            container.style.display = 'block';
-            icon.innerText = '🔼';
-        }
+        if (container.style.display === 'block') { container.style.display = 'none'; icon.innerText = '🔽'; } 
+        else { container.style.display = 'block'; icon.innerText = '🔼'; }
     }
 
     function closeHistory() {
@@ -322,7 +320,7 @@
         let list = localStorage.getItem('metro_savedList'); 
         if(list) { savedList = JSON.parse(list); updateTable(); }
         
-        // 💡 [V12.4] 초기 로딩 시 작성되었던 문법 오류 긴급 수정
+        // 💡 [V12.5] 초기 로딩 시 리스트 파싱 오류 방어 로직
         let sentList = localStorage.getItem('metro_sentListToday');
         if(sentList) {
             try {
@@ -330,7 +328,7 @@
                 sentTodayList = parsed.filter(item => item.sentDate === todayStr);
                 localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
                 updateSentTable();
-            } catch(e) { console.error("전송 리스트 복구 오류:", e); }
+            } catch(e) { console.error("전송 리스트 복구 실패:", e); }
         }
 
         const cachedSites = localStorage.getItem('metro_sites');
@@ -339,6 +337,7 @@
             s.innerHTML = `<option value="">🏢 현장을 선택해주세요</option>`;
             JSON.parse(cachedSites).forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`);
         }
+
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
             try {
@@ -399,6 +398,7 @@
         const d = document.getElementById('db-sheet'); 
         const currentVal = d.value;
 
+        // 로딩 보호 장치 작동
         d.disabled = true;
         d.innerHTML = '<option value="">⏳ 현장 데이터 동기화 중...</option>';
 
@@ -408,6 +408,7 @@
             if(j.result==='success') {
                 cloudDB = j.data; 
                 d.innerHTML = '<option value="">📑 공종 선택 (필수)</option>';
+                
                 const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터" || k === "군산_전체공정");
                 if (masterKey) {
                     const allData = cloudDB[masterKey];
@@ -416,6 +417,7 @@
                 } else {
                    Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "통합_작업기록") d.innerHTML += `<option value="${n}">${n}</option>`; });
                 }
+                
                 if(currentVal && Array.from(d.options).some(o => o.value === currentVal)) d.value = currentVal;
                 d.disabled = false;
                 autoSave(); 
@@ -475,6 +477,7 @@
 
     function fill(v) { 
         ['loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; }); 
+        // 💡 [V12.5] 마스터 시트에서 가져온 고유 번호(no)를 숨겨진 필드에 저장
         if(document.getElementById('task-no')) document.getElementById('task-no').value = v.no || '';
         if(!document.getElementById('contractor').value) document.getElementById('contractor').value = "메트로 알앤에스";
         document.getElementById('search-results').style.display='none'; autoSave(); 
@@ -614,11 +617,20 @@
         badge.innerText = `📦 ${photoCount}장의 이미지 패키징 중...`; badge.style.display = 'block';
         try {
             const d = getD(); const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; d.date = todayStr; 
-            const payload = { targetSheetId: currentSid, record: d, pdfBase64: "", p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", p3Base64: (d.p3||"").split(',')[1]||"" };
+            
+            // 💡 [V12.5] 전송 페이로드: d객체에 포함된 no(고유번호)가 서버 V7.7로 전달되어 통합 기록 마지막 열에 기록됨
+            const payload = { 
+                targetSheetId: currentSid, record: d, pdfBase64: "", 
+                p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", 
+                p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", 
+                p3Base64: (d.p3||"").split(',')[1]||"" 
+            };
             for(let i=4; i<=12; i++) { payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||""; payload['p'+i+'RawBase64'] = ""; }
+            
             btn.innerHTML = "⏳ 서버 전송 중..."; badge.innerText = "🚀 서버로 데이터 전송 중...";
             const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
             btn.innerHTML = "⏳ 문서 생성 중..."; badge.innerHTML = "🛠️ 서버에서 PDF 보고서 생성 중...";
+            
             if (response.ok) {
                 const result = await response.json();
                 if(result.result === 'success') {
