@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 💡 버전 업데이트: V12.5 (본사 메인관리 통합_작업기록 마지막 열 고유번호 기록 대응) -->
-    <title>(주)METRO R&S 현장관리 시스템 V12.5</title>
+    <!-- 💡 버전 업데이트: V12.7 (12.4 안정성 바탕 + 고유번호 통합 검색 기능 완벽 복구) -->
+    <title>(주)METRO R&S 현장관리 시스템 V12.7</title>
     
     <script>
-        // 카카오톡 브라우저 강제 이탈 처리 (파일 업로드 및 세션 유지 위함)
         var userAgent = navigator.userAgent.toLowerCase();
         if (userAgent.indexOf("kakaotalk") !== -1) {
             location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
@@ -105,7 +104,6 @@
 </head>
 <body>
 
-<!-- 커스텀 알림창 -->
 <div id="custom-alert">
     <div class="custom-alert-box">
         <div class="custom-alert-msg" id="alert-msg">메시지 내용</div>
@@ -113,7 +111,6 @@
     </div>
 </div>
 
-<!-- 과거 이력 조회 모달 -->
 <div id="history-modal">
     <div class="custom-alert-box" style="display:flex; flex-direction:column; max-height:85vh; width:95%;">
         <div style="background:var(--primary-dark); color:white; padding:18px; font-weight:900; font-size:17px; border-radius:24px 24px 0 0;">🔍 과거 작업 이력 결과</div>
@@ -133,13 +130,12 @@
     </div>
 </div>
 
-<!-- 하단 전송 상태 뱃지 -->
 <div id="generating-badge">🚀 전송 준비 중...</div>
 
 <header>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
         <img src="logo.png" alt="METRO" style="height: 24px; border-radius: 4px;" onerror="this.src='https://placehold.co/100x30/0f172a/white?text=METRO+R%26S'">
-        <span>(주)METRO R&S 현장관리 시스템 V12.5</span>
+        <span>(주)METRO R&S 현장관리 시스템 V12.7</span>
     </div>
 </header>
 
@@ -156,19 +152,19 @@
         <div class="grid">
             <input type="date" id="today-date" class="full">
             
-            <!-- 공종 선택창 (데이터 동기화 완료 전까지 비활성화) -->
             <select id="db-sheet" onchange="clearInputs(false); autoSave();" class="full" disabled>
-                <option value="">현장을 먼저 선택해주세요</option>
-            </select>
-            
-            <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
-            
-            <!-- 💡 [V12.5] 마스터 시트 고유 번호를 서버로 넘기기 위한 숨겨진 필드 -->
-            <input type="hidden" id="task-no" value="">
+            <option value="">현장을 먼저 선택해주세요</option>
+        </select>
+        
+        <input type="text" id="site" placeholder="현장명" readonly class="full" style="background-color: #e2e8f0; color: #64748b; font-weight:600;">
+        
+        <!-- 💡 [V12.7 복구] 고유번호 저장 및 빠른 검색 입력창 -->
+        <input type="hidden" id="task-no" value="">
+        <input type="text" id="input-no" placeholder="💡 고유번호로 빠른 검색 (숫자만 입력)" inputmode="numeric" oninput="document.getElementById('task-no').value=''; this.value=this.value.replace(/[^0-9]/g, ''); search(); autoSave();" class="full" style="background-color: #f0fdf4; border-color: #86efac; color: #166534; font-weight: bold;">
 
-            <div class="full toggle-btn-group">
-                <label>
-                    <input type="radio" name="area-type" value="private" checked onchange="toggleArea()">
+        <div class="full toggle-btn-group">
+            <label>
+                <input type="radio" name="area-type" value="private" checked onchange="toggleArea()">
                     <span>🏠 세대 (전용부)</span>
                 </label>
                 <label>
@@ -180,7 +176,6 @@
             <input type="text" id="dong" placeholder="동" inputmode="numeric" oninput="if(document.querySelector('input[name=\'area-type\']:checked').value === 'private') this.value = this.value.replace(/[^0-9]/g, ''); search(); autoSave();">
             <input type="text" id="ho" placeholder="호" inputmode="numeric" oninput="if(this.value !== '-') this.value = this.value.replace(/[^0-9]/g, ''); search(); autoSave();">
             
-            <!-- 실시간 검색 결과 팝업 -->
             <div id="search-results"></div>
             
             <input type="text" id="loc" placeholder="위치">
@@ -231,7 +226,6 @@
         </div>
     </div>
 
-    <!-- 리스트 및 검색 섹션 -->
     <div class="section">
         <div class="section-title"><span>목록</span> 임시 저장 내역 (<span id="count" style="color:var(--accent);">0</span>건)</div>
         <table>
@@ -274,15 +268,25 @@
     function toggleExtraPhotos() {
         const container = document.getElementById('extra-photo-container');
         const btnText = document.getElementById('btn-toggle-extra');
-        if (container.style.display === 'block') { container.style.display = 'none'; btnText.innerHTML = '<span>➕</span> 추가 사진 등록 (9칸)'; } 
-        else { container.style.display = 'block'; btnText.innerHTML = '<span>➖</span> 추가 사진 접기'; }
+        if (container.style.display === 'block') {
+            container.style.display = 'none';
+            btnText.innerHTML = '<span>➕</span> 추가 사진 등록 (9칸)';
+        } else {
+            container.style.display = 'block';
+            btnText.innerHTML = '<span>➖</span> 추가 사진 접기';
+        }
     }
 
     function toggleSentHistory() {
         const container = document.getElementById('sent-today-container');
         const icon = document.getElementById('toggle-icon-sent');
-        if (container.style.display === 'block') { container.style.display = 'none'; icon.innerText = '🔽'; } 
-        else { container.style.display = 'block'; icon.innerText = '🔼'; }
+        if (container.style.display === 'block') {
+            container.style.display = 'none';
+            icon.innerText = '🔽';
+        } else {
+            container.style.display = 'block';
+            icon.innerText = '🔼';
+        }
     }
 
     function closeHistory() {
@@ -320,7 +324,6 @@
         let list = localStorage.getItem('metro_savedList'); 
         if(list) { savedList = JSON.parse(list); updateTable(); }
         
-        // 💡 [V12.5] 초기 로딩 시 리스트 파싱 오류 방어 로직
         let sentList = localStorage.getItem('metro_sentListToday');
         if(sentList) {
             try {
@@ -328,7 +331,7 @@
                 sentTodayList = parsed.filter(item => item.sentDate === todayStr);
                 localStorage.setItem('metro_sentListToday', JSON.stringify(sentTodayList));
                 updateSentTable();
-            } catch(e) { console.error("전송 리스트 복구 실패:", e); }
+            } catch(e) { console.error("전송 리스트 복구 오류:", e); }
         }
 
         const cachedSites = localStorage.getItem('metro_sites');
@@ -337,7 +340,6 @@
             s.innerHTML = `<option value="">🏢 현장을 선택해주세요</option>`;
             JSON.parse(cachedSites).forEach(v => s.innerHTML += `<option value="${v.id}">${v.name}</option>`);
         }
-
         let auto = localStorage.getItem('metro_autoSave');
         if(auto) {
             try {
@@ -398,7 +400,6 @@
         const d = document.getElementById('db-sheet'); 
         const currentVal = d.value;
 
-        // 로딩 보호 장치 작동
         d.disabled = true;
         d.innerHTML = '<option value="">⏳ 현장 데이터 동기화 중...</option>';
 
@@ -408,7 +409,6 @@
             if(j.result==='success') {
                 cloudDB = j.data; 
                 d.innerHTML = '<option value="">📑 공종 선택 (필수)</option>';
-                
                 const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터" || k === "군산_전체공정");
                 if (masterKey) {
                     const allData = cloudDB[masterKey];
@@ -417,7 +417,6 @@
                 } else {
                    Object.keys(cloudDB).forEach(n => { if (n !== "작업기록" && n !== "통합_작업기록") d.innerHTML += `<option value="${n}">${n}</option>`; });
                 }
-                
                 if(currentVal && Array.from(d.options).some(o => o.value === currentVal)) d.value = currentVal;
                 d.disabled = false;
                 autoSave(); 
@@ -446,44 +445,63 @@
                 listBody.innerHTML = '<tr><td colspan="3" style="padding:40px; color:var(--text-sub);">해당 세대에 기록된 작업이 없습니다.</td></tr>';
             }
         } catch(e) {
-            listBody.innerHTML = '<tr><td colspan="3" style="padding:40px; color:var(--danger);">❌ 로드 실패 (네트워크 확인)</td></tr>';
-        }
+        listBody.innerHTML = '<tr><td colspan="3" style="padding:40px; color:var(--danger);">❌ 로드 실패 (네트워크 확인)</td></tr>';
     }
+}
 
-    function search() {
-        const selectedWork = document.getElementById('db-sheet').value;
-        const d = document.getElementById('dong').value.trim();
-        const h = document.getElementById('ho').value.trim();
-        const res = document.getElementById('search-results');
-        const isCommon = document.querySelector('input[name="area-type"]:checked').value === 'common';
-        if(!selectedWork || !d || (!isCommon && !h)) { res.style.display='none'; return; }
-        
-        const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터" || k === "군산_전체공정");
-        if (!masterKey) return;
-        const matches = (cloudDB[masterKey] || []).filter(v => {
-            if (String(v.work) !== selectedWork) return false;
-            if (isCommon) return String(v.dong).includes(d) && String(v.ho) === "-";
-            return String(v.dong) === d && String(v.ho) === h;
+function search() {
+    const selectedWork = document.getElementById('db-sheet').value;
+    const d = document.getElementById('dong').value.trim();
+    const h = document.getElementById('ho').value.trim();
+    const noInput = document.getElementById('input-no') ? document.getElementById('input-no').value.trim() : '';
+    const res = document.getElementById('search-results');
+    const isCommon = document.querySelector('input[name="area-type"]:checked').value === 'common';
+    
+    if(!noInput && (!selectedWork || !d || (!isCommon && !h))) { res.style.display='none'; return; }
+    
+    const masterKey = Object.keys(cloudDB).find(k => k === "전체_공정_마스터" || k === "전체_공정마스터" || k === "군산_전체공정");
+    if (!masterKey) return;
+    const matches = (cloudDB[masterKey] || []).filter(v => {
+        if (noInput) return String(v.no) === noInput;
+        if (String(v.work) !== selectedWork) return false;
+        if (isCommon) return String(v.dong).includes(d) && String(v.ho) === "-";
+        return String(v.dong) === d && String(v.ho) === h;
+    });
+    if(matches.length>0) {
+        let htmlStr = `<div style="position:sticky; top:0; background:rgba(240, 249, 255, 0.95); backdrop-filter:blur(5px); padding:12px 16px; font-weight:800; font-size:14px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100;"><span>🔍 내역 ${matches.length}건</span><span onclick="document.getElementById('search-results').style.display='none'" style="background:#0ea5e9; padding:6px 14px; border-radius:8px; cursor:pointer; color:#ffffff; font-weight:700;">닫기 ✕</span></div>`;
+        matches.forEach(v => { 
+            let noBadge = v.no ? `<span style="color:#64748b; font-size:11px; border:1px solid #cbd5e1; padding:1px 4px; border-radius:4px; margin-right:6px; background:#f8fafc;">No.${v.no}</span>` : '';
+            let titleText = noInput ? `📍 ${v.dong}동 ${v.ho}호 - ${v.loc}` : `📍 ${v.loc}`;
+            let descText = noInput ? `📝 [${v.work}] ${v.desc}` : `📝 ${v.desc}`;
+            htmlStr += `<div class="result-item" onclick='fill(${JSON.stringify(v).replace(/'/g,"&apos;")})'><strong>${noBadge}${titleText}</strong><span class="ellipsis">${descText}</span></div>`; 
         });
-        if(matches.length>0) {
-            let htmlStr = `<div style="position:sticky; top:0; background:rgba(240, 249, 255, 0.95); backdrop-filter:blur(5px); padding:12px 16px; font-weight:800; font-size:14px; border-bottom:2px solid #bae6fd; color:#0284c7; display:flex; justify-content:space-between; align-items:center; z-index:100;"><span>🔍 내역 ${matches.length}건</span><span onclick="document.getElementById('search-results').style.display='none'" style="background:#0ea5e9; padding:6px 14px; border-radius:8px; cursor:pointer; color:#ffffff; font-weight:700;">닫기 ✕</span></div>`;
-            matches.forEach(v => { 
-                let noBadge = v.no ? `<span style="color:#64748b; font-size:11px; border:1px solid #cbd5e1; padding:1px 4px; border-radius:4px; margin-right:6px; background:#f8fafc;">No.${v.no}</span>` : '';
-                htmlStr += `<div class="result-item" onclick='fill(${JSON.stringify(v).replace(/'/g,"&apos;")})'><strong>${noBadge}📍 ${v.loc}</strong><span class="ellipsis">📝 ${v.desc}</span></div>`; 
-            });
-            res.innerHTML = htmlStr; res.style.display='block';
-        } else res.style.display='none';
-    }
+        res.innerHTML = htmlStr; res.style.display='block';
+    } else res.style.display='none';
+}
 
-    function fill(v) { 
-        ['loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; }); 
-        // 💡 [V12.5] 마스터 시트에서 가져온 고유 번호(no)를 숨겨진 필드에 저장
-        if(document.getElementById('task-no')) document.getElementById('task-no').value = v.no || '';
-        if(!document.getElementById('contractor').value) document.getElementById('contractor').value = "메트로 알앤에스";
-        document.getElementById('search-results').style.display='none'; autoSave(); 
+function fill(v) { 
+    ['loc','work','type','contractor','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = v[id] || ''; }); 
+    if(document.getElementById('task-no')) document.getElementById('task-no').value = v.no || '';
+    if(document.getElementById('input-no')) document.getElementById('input-no').value = v.no || '';
+    
+    if(document.getElementById('dong')) document.getElementById('dong').value = v.dong || '';
+    if(document.getElementById('ho')) {
+        document.getElementById('ho').value = v.ho || '';
+        if(v.ho === "-") { document.querySelector('input[name="area-type"][value="common"]').checked = true; } 
+        else { document.querySelector('input[name="area-type"][value="private"]').checked = true; }
+        toggleArea();
     }
+    
+    if(document.getElementById('db-sheet') && v.work) {
+        let selectEl = document.getElementById('db-sheet');
+        if (Array.from(selectEl.options).some(o => o.value === v.work)) selectEl.value = v.work;
+    }
+    
+    if(!document.getElementById('contractor').value) document.getElementById('contractor').value = "메트로 알앤에스";
+    document.getElementById('search-results').style.display='none'; autoSave(); 
+}
 
-    function proc(input, pId, tId, label) {
+function proc(input, pId, tId, label) {
         if(input.files && input.files[0]) {
             let applyWm = (pId === 'p1' || pId === 'p2');
             isProcessingImage = true; const txt = document.getElementById(tId);
@@ -533,17 +551,17 @@
             ctx.textAlign = "center"; ctx.fillText(lbl, x + (col1W / 2), y + (i * rowH) + (rowH / 2));
             ctx.textAlign = "left"; ctx.fillText(values[i], x + col1W + 12, y + (i * rowH) + (rowH / 2));
         });
-        return c.toDataURL('image/jpeg', 0.5);
-    }
+    return c.toDataURL('image/jpeg', 0.5);
+}
 
-    function getD() { 
-        let taskNoStr = document.getElementById('task-no') ? document.getElementById('task-no').value : "";
-        let d = { date: document.getElementById('today-date').value, site: document.getElementById('site').value, sid: currentSid, workSheet: document.getElementById('db-sheet').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value, p1: document.getElementById('p1').src, p1_raw: document.getElementById('p1').dataset.raw || "", p1_wm: document.getElementById('p1').dataset.wm || "true", p2: document.getElementById('p2').src, p2_raw: document.getElementById('p2').dataset.raw || "", p2_wm: document.getElementById('p2').dataset.wm || "true", p3: document.getElementById('p3').src, no: taskNoStr };
-        for(let i=4; i<=12; i++) { let el = document.getElementById('p'+i); d['p'+i] = el.src; d['p'+i+'_raw'] = el.dataset.raw || ""; d['p'+i+'_wm'] = el.dataset.wm || "true"; }
-        return d;
-    }
+function getD() { 
+    let taskNoStr = document.getElementById('task-no') ? document.getElementById('task-no').value : "";
+    let d = { date: document.getElementById('today-date').value, site: document.getElementById('site').value, sid: currentSid, workSheet: document.getElementById('db-sheet').value, dong: document.getElementById('dong').value, ho: document.getElementById('ho').value, loc: document.getElementById('loc').value, work: document.getElementById('work').value, type: document.getElementById('type').value, contractor: document.getElementById('contractor').value, desc: document.getElementById('desc').value, p1: document.getElementById('p1').src, p1_raw: document.getElementById('p1').dataset.raw || "", p1_wm: document.getElementById('p1').dataset.wm || "true", p2: document.getElementById('p2').src, p2_raw: document.getElementById('p2').dataset.raw || "", p2_wm: document.getElementById('p2').dataset.wm || "true", p3: document.getElementById('p3').src, no: taskNoStr };
+    for(let i=4; i<=12; i++) { let el = document.getElementById('p'+i); d['p'+i] = el.src; d['p'+i+'_raw'] = el.dataset.raw || ""; d['p'+i+'_wm'] = el.dataset.wm || "true"; }
+    return d;
+}
 
-    function saveLocal() {
+function saveLocal() {
         if(isProcessingImage) return showMsg("⏳ 사진 처리가 진행 중입니다.");
         const d = getD();
         const required = { 'dong': '동 번호', 'ho': '호수', 'loc': '상세 위치', 'work': '공종', 'type': '하자 유형', 'desc': '상세 작업 내용' };
@@ -574,41 +592,42 @@
     }
     
     async function loadLocal(i) { const d = savedList[i]; editingIndex = i; await loadDataToForm(d); document.getElementById('btn-save').innerHTML = "💾 수정 저장"; }
-    async function loadSent(i) { const d = sentTodayList[sentTodayList.length - 1 - i]; await loadDataToForm(d); showMsg("ℹ️ 이 내역은 이미 전송이 완료된 작업입니다."); }
+async function loadSent(i) { const d = sentTodayList[sentTodayList.length - 1 - i]; await loadDataToForm(d); showMsg("ℹ️ 이 내역은 이미 전송이 완료된 작업입니다."); }
 
-    async function loadDataToForm(d) {
-        if (d.sid) {
-            if (d.sid !== currentSid) { document.getElementById('site-select').value = d.sid; currentSid = d.sid; await loadDB(); }
-            if (d.workSheet) { document.getElementById('db-sheet').value = d.workSheet; }
-        }
-        if(d.ho === "-") { document.querySelector('input[name="area-type"][value="common"]').checked = true; } else { document.querySelector('input[name="area-type"][value="private"]').checked = true; }
-        toggleArea();
-        document.getElementById('today-date').value = d.date; document.getElementById('dong').value = d.dong; document.getElementById('ho').value = d.ho; document.getElementById('loc').value = d.loc; document.getElementById('work').value = d.work; document.getElementById('type').value = d.type; document.getElementById('contractor').value = d.contractor; document.getElementById('desc').value = d.desc;
-        if(document.getElementById('task-no')) document.getElementById('task-no').value = d.no || '';
-        for(let num=1; num<=12; num++) {
-            const imgEl = document.getElementById('p' + num); const textEl = document.getElementById('t' + num); const imgSrc = d['p' + num];
-            if (imgSrc && imgSrc.length > 100) { imgEl.src = imgSrc; imgEl.dataset.raw = d['p' + num + '_raw'] || ""; imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; imgEl.style.display = 'block'; textEl.style.display = 'none'; } 
-            else { imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.dataset.wm = "true"; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
-        }
-        const hasExtra = [4,5,6,7,8,9,10,11,12].some(n => d['p'+n] && d['p'+n].length > 100);
-        if(hasExtra) { document.getElementById('extra-photo-container').style.display = 'block'; }
-        autoSave();
+async function loadDataToForm(d) {
+    if (d.sid) {
+        if (d.sid !== currentSid) { document.getElementById('site-select').value = d.sid; currentSid = d.sid; await loadDB(); }
+        if (d.workSheet) { document.getElementById('db-sheet').value = d.workSheet; }
     }
-
-    function delLocal(i) { savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); if (editingIndex === i) clearInputs(true); else if (editingIndex > i) editingIndex--; updateTable(); }
-
-    function clearInputs(isSaveLocal) { 
-        ['dong','ho','loc','type','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
-        document.getElementById('contractor').value = "메트로 알앤에스"; 
-        if(document.getElementById('task-no')) document.getElementById('task-no').value = ''; 
-        document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
-        for(let i=1; i<=12; i++) { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }
-        document.getElementById('extra-photo-container').style.display = 'none';
-        editingIndex = -1; document.getElementById('btn-save').innerHTML = "💾 임시 저장"; 
-        if(isSaveLocal) autoSave(); else localStorage.removeItem('metro_autoSave');
+    if(d.ho === "-") { document.querySelector('input[name="area-type"][value="common"]').checked = true; } else { document.querySelector('input[name="area-type"][value="private"]').checked = true; }
+    toggleArea();
+    document.getElementById('today-date').value = d.date; document.getElementById('dong').value = d.dong; document.getElementById('ho').value = d.ho; document.getElementById('loc').value = d.loc; document.getElementById('work').value = d.work; document.getElementById('type').value = d.type; document.getElementById('contractor').value = d.contractor; document.getElementById('desc').value = d.desc;
+    if(document.getElementById('task-no')) document.getElementById('task-no').value = d.no || '';
+    if(document.getElementById('input-no')) document.getElementById('input-no').value = d.no || '';
+    for(let num=1; num<=12; num++) {
+        const imgEl = document.getElementById('p' + num); const textEl = document.getElementById('t' + num); const imgSrc = d['p' + num];
+        if (imgSrc && imgSrc.length > 100) { imgEl.src = imgSrc; imgEl.dataset.raw = d['p' + num + '_raw'] || ""; imgEl.dataset.wm = d['p' + num + '_wm'] !== undefined ? d['p' + num + '_wm'] : "true"; imgEl.style.display = 'block'; textEl.style.display = 'none'; } 
+        else { imgEl.src = ''; imgEl.dataset.raw = ''; imgEl.dataset.wm = "true"; imgEl.style.display = 'none'; textEl.style.display = 'block'; }
     }
+    const hasExtra = [4,5,6,7,8,9,10,11,12].some(n => d['p'+n] && d['p'+n].length > 100);
+    if(hasExtra) { document.getElementById('extra-photo-container').style.display = 'block'; }
+    autoSave();
+}
 
-    async function send() {
+function delLocal(i) { savedList.splice(i, 1); localStorage.setItem('metro_savedList', JSON.stringify(savedList)); if (editingIndex === i) clearInputs(true); else if (editingIndex > i) editingIndex--; updateTable(); }
+
+function clearInputs(isSaveLocal) { 
+    ['input-no','dong','ho','loc','type','desc'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value=''; }); 
+    document.getElementById('contractor').value = "메트로 알앤에스"; 
+    if(document.getElementById('task-no')) document.getElementById('task-no').value = ''; 
+    document.querySelector('input[name="area-type"][value="private"]').checked = true; toggleArea();
+    for(let i=1; i<=12; i++) { let el = document.getElementById('p'+i); el.style.display='none'; el.src=''; el.dataset.raw=''; el.dataset.wm='true'; document.getElementById('t'+i).style.display='block'; }
+    document.getElementById('extra-photo-container').style.display = 'none';
+    editingIndex = -1; document.getElementById('btn-save').innerHTML = "💾 임시 저장"; 
+    if(isSaveLocal) autoSave(); else localStorage.removeItem('metro_autoSave');
+}
+
+async function send() {
         if(isProcessingImage) return showMsg("⏳ 사진 처리가 진행 중입니다.");
         const d_init = getD(); if(!currentSid || !d_init.dong || !d_init.ho || !d_init.work) return showMsg("🚨 필수 정보 누락!");
         const btn = document.getElementById('btn-send'), badge = document.getElementById('generating-badge');
@@ -617,20 +636,11 @@
         badge.innerText = `📦 ${photoCount}장의 이미지 패키징 중...`; badge.style.display = 'block';
         try {
             const d = getD(); const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; d.date = todayStr; 
-            
-            // 💡 [V12.5] 전송 페이로드: d객체에 포함된 no(고유번호)가 서버 V7.7로 전달되어 통합 기록 마지막 열에 기록됨
-            const payload = { 
-                targetSheetId: currentSid, record: d, pdfBase64: "", 
-                p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", 
-                p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", 
-                p3Base64: (d.p3||"").split(',')[1]||"" 
-            };
+            const payload = { targetSheetId: currentSid, record: d, pdfBase64: "", p1Base64: (d.p1||"").split(',')[1]||"", p1RawBase64: (d.p1_wm === "true") ? (d.p1_raw||"").split(',')[1]||"" : "", p2Base64: (d.p2||"").split(',')[1]||"", p2RawBase64: (d.p2_wm === "true") ? (d.p2_raw||"").split(',')[1]||"" : "", p3Base64: (d.p3||"").split(',')[1]||"" };
             for(let i=4; i<=12; i++) { payload['p'+i+'Base64'] = (d['p'+i]||"").split(',')[1]||""; payload['p'+i+'RawBase64'] = ""; }
-            
             btn.innerHTML = "⏳ 서버 전송 중..."; badge.innerText = "🚀 서버로 데이터 전송 중...";
             const response = await fetch(MY_GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); 
             btn.innerHTML = "⏳ 문서 생성 중..."; badge.innerHTML = "🛠️ 서버에서 PDF 보고서 생성 중...";
-            
             if (response.ok) {
                 const result = await response.json();
                 if(result.result === 'success') {
