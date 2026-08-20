@@ -1,1 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>(주)메트로 R&S 출역관리</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --primary: #1565C0;
+      --primary-dark: #0D47A1;
+      --primary-light: #E3F2FD;
+      --accent: #FF8F00;
+      --success: #2E7D32;
+      --error: #C62828;
+      --bg: #F5F7FA;
+      --card: #FFFFFF;
+      --text: #212121;
+      --text-sub: #616161;
+      --border: #DEE3EA;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.10);
+      --nav-h: 60px;
+    }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: calc(var(--nav-h) + 16px);
+    }
+
+    /* ── 헤더 ── */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      padding: 18px 16px 22px;
+      text-align: center;
+    }
+    .header-badge {
+      font-size: 11px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 3px 10px;
+      display: inline-block;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .header-date { font-size: 13px; margin-top: 4px; opacity: 0.85; }
+
+    /* ── 하단 탭 내비게이션 ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: white;
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    }
+    .nav-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: #9E9E9E;
+      font-size: 11px;
+      font-weight: 600;
+      transition: color 0.2s;
+      padding: 0;
+    }
+    .nav-tab .nav-icon { font-size: 22px; line-height: 1; }
+    .nav-tab.active { color: var(--primary); }
+
+    /* ── 페이지 전환 ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin: 12px;
+      padding: 16px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--primary-light);
+    }
+
+    /* ── 폼 요소 ── */
+    .form-group { margin-bottom: 14px; }
+    .form-group:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+    label .required { color: var(--accent); margin-left: 2px; }
+
+    input[type="text"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 13px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text);
+      background: #FAFBFC;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
+      background: white;
+    }
+    textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 13px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-sub);
+      pointer-events: none;
+      font-size: 14px;
+    }
+    .select-wrap select { padding-right: 36px; cursor: pointer; }
+    select.loading { color: #9E9E9E; }
+
+    /* ── 작업자 목록 ── */
+    .worker-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .worker-count-badge {
+      background: var(--primary);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .btn-load-roster {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 13px;
+      border: 1.5px solid var(--primary);
+      border-radius: 20px;
+      background: white;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-load-roster:hover { background: var(--primary-light); }
+    .btn-load-roster:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .worker-list { display: flex; flex-direction: column; gap: 8px; }
+    .worker-item { display: flex; align-items: center; gap: 8px; }
+    .worker-num {
+      min-width: 26px; height: 26px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+    .worker-item input { flex: 1; }
+    .btn-remove {
+      min-width: 34px; height: 34px;
+      border: none;
+      background: #FFEBEE;
+      color: var(--error);
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .btn-remove:hover { background: #FFCDD2; }
+
+    .btn-add-worker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 11px;
+      border: 2px dashed var(--primary);
+      border-radius: 8px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-add-worker:hover { background: #BBDEFB; }
+
+    /* ── 사진 ── */
+    input[type="file"] { display: none; }
+    .photo-btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn-photo {
+      padding: 10px;
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      background: white;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .btn-photo:hover { background: var(--primary-light); }
+    .photo-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .photo-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-thumb .remove-photo {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── 진행 바 ── */
+    .progress-bar-wrap {
+      display: none;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .progress-bar-wrap.show { display: block; }
+    .progress-bar {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    /* ── 제출 버튼 ── */
+    .btn-submit {
+      display: block;
+      width: calc(100% - 24px);
+      margin: 16px 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(21,101,192,0.35);
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .btn-submit:hover { transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { background: #90A4AE; box-shadow: none; cursor: not-allowed; transform: none; }
+
+    /* ── 성공 화면 ── */
+    .success-screen { display: none; text-align: center; padding: 40px 20px; }
+    .success-screen.show { display: block; }
+    .success-icon { font-size: 64px; margin-bottom: 16px; }
+    .success-screen h2 { font-size: 22px; font-weight: 700; color: var(--success); margin-bottom: 8px; }
+    .success-screen p { font-size: 14px; color: var(--text-sub); line-height: 1.6; }
+    .btn-new {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 28px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── 검색 페이지 ── */
+    .search-date-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .btn-search {
+      width: 100%;
+      padding: 13px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-search:hover { background: var(--primary-dark); }
+    .btn-search:disabled { background: #90A4AE; cursor: not-allowed; }
+
+    .search-results { margin-top: 4px; }
+    .result-count {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin: 12px 12px 4px;
+      font-weight: 600;
+    }
+
+    .result-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin: 8px 12px;
+      overflow: hidden;
+    }
+    .result-card-header {
+      background: var(--primary);
+      color: white;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .result-date { font-size: 14px; font-weight: 700; }
+    .result-count-badge {
+      background: rgba(255,255,255,0.25);
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .result-card-body { padding: 12px 14px; }
+    .result-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      margin-bottom: 10px;
+    }
+    .result-meta-item { }
+    .result-meta-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .result-meta-value { font-size: 14px; font-weight: 600; }
+    .result-workers-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+    .result-workers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .result-worker-chip {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-sub);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    /* ── 로딩 오버레이 ── */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(255,255,255,0.85);
+      z-index: 9998;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .overlay.show { display: flex; }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .overlay-text { font-size: 15px; font-weight: 600; color: var(--primary); }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed;
+      bottom: 74px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #212121;
+      color: white;
+      padding: 12px 22px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--error); }
+  </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+  <div class="header-badge">출역관리 시스템</div>
+  <h1>(주)메트로 R&S 출역관리</h1>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<!-- ══════════════ 출역입력 페이지 ══════════════ -->
+<div class="page active" id="page-form">
+
+  <div id="formArea">
+
+    <!-- 기본 정보 -->
+    <div class="card">
+      <div class="section-title">📋 기본 정보</div>
+
+      <div class="form-group">
+        <label>날짜 <span class="required">*</span></label>
+        <input type="date" id="date" required />
+      </div>
+
+      <div class="form-group">
+        <label>현장명 <span class="required">*</span></label>
+        <div class="select-wrap">
+          <select id="siteName" class="loading">
+            <option value="">현장목록 불러오는 중...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>공사명</label>
+        <input type="text" id="constructionName" placeholder="공사명을 입력하세요" />
+      </div>
+
+      <div class="form-group">
+        <label>관리자명 <span class="required">*</span></label>
+        <input type="text" id="managerName" placeholder="관리자 이름" />
+      </div>
+    </div>
+
+    <!-- 출역 인원 -->
+    <div class="card">
+      <div class="worker-header">
+        <div class="section-title" style="margin-bottom:0; flex:1;">
+          👷 출역 인원
+          <span class="worker-count-badge" id="workerCountBadge">0명</span>
+        </div>
+        <button class="btn-load-roster" id="btnLoadRoster" onclick="loadRoster()">
+          📋 명단 불러오기
+        </button>
+      </div>
+
+      <div style="height:12px;"></div>
+      <div class="worker-list" id="workerList"></div>
+      <button class="btn-add-worker" onclick="addWorker()">＋ 작업자 추가</button>
+    </div>
+
+    <!-- 작업 내용 -->
+    <div class="card">
+      <div class="section-title">📝 작업 내용</div>
+
+      <div class="form-group">
+        <label>금일 작업내용</label>
+        <textarea id="todayWork" placeholder="오늘 진행한 작업 내용을 입력하세요"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>명일 작업내용</label>
+        <textarea id="tomorrowWork" placeholder="내일 예정된 작업 내용을 입력하세요"></textarea>
+      </div>
+    </div>
+
+    <!-- 사진 첨부 -->
+    <div class="card">
+      <div class="section-title">📷 출역인원 사진</div>
+
+      <div class="photo-btn-row">
+        <button class="btn-photo" onclick="document.getElementById('cameraInput').click()">📷 카메라 촬영</button>
+        <button class="btn-photo" onclick="document.getElementById('galleryInput').click()">🖼️ 갤러리 선택</button>
+      </div>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple onchange="handlePhotos(this.files)" />
+      <input type="file" id="galleryInput" accept="image/*" multiple onchange="handlePhotos(this.files)" />
+
+      <div class="photo-preview-grid" id="photoPreview"></div>
+      <div class="progress-bar-wrap" id="progressWrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="submitBtn" onclick="submitForm()">✅ 출역 보고 제출</button>
+
+  </div><!-- /formArea -->
+
+  <!-- 성공 화면 -->
+  <div class="card" id="successCard" style="margin:20px 12px; display:none;">
+    <div class="success-screen show">
+      <div class="success-icon">✅</div>
+      <h2>제출 완료!</h2>
+      <p id="successMsg"></p>
+      <button class="btn-new" onclick="resetForm()">새 출역 보고 작성</button>
+    </div>
+  </div>
+
+</div><!-- /page-form -->
+
+<!-- ══════════════ 검색 페이지 ══════════════ -->
+<div class="page" id="page-search">
+
+  <div class="card">
+    <div class="section-title">🔍 출역 기록 검색</div>
+
+    <div class="search-date-row">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>시작 날짜</label>
+        <input type="date" id="searchFrom" />
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>종료 날짜</label>
+        <input type="date" id="searchTo" />
+      </div>
+    </div>
+
+    <button class="btn-search" id="btnSearch" onclick="doSearch()">검색</button>
+  </div>
+
+  <div id="searchResults">
+    <div class="empty-state">
+      <div class="icon">📅</div>
+      <p>날짜 범위를 선택하고<br>검색 버튼을 눌러주세요.</p>
+    </div>
+  </div>
+
+</div><!-- /page-search -->
+
+<!-- 하단 탭 내비게이션 -->
+<nav class="bottom-nav">
+  <button class="nav-tab active" id="tab-form" onclick="switchTab('form')">
+    <span class="nav-icon">📋</span>
+    출역입력
+  </button>
+  <button class="nav-tab" id="tab-search" onclick="switchTab('search')">
+    <span class="nav-icon">🔍</span>
+    검색
+  </button>
+</nav>
+
+<!-- 로딩 오버레이 -->
+<div class="overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="overlay-text" id="overlayText">저장 중...</div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── 상태 ──────────────────────────────────
+  let photoFiles = [];
+
+  // ── 초기화 ────────────────────────────────
+  (function init() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    document.getElementById('date').value = todayStr;
+    document.getElementById('searchFrom').value = todayStr;
+    document.getElementById('searchTo').value = todayStr;
+
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    document.getElementById('headerDate').textContent =
+      `${yyyy}년 ${mm}월 ${dd}일 (${days[today.getDay()]})`;
+
+    addWorker();
+    loadSiteList();
+  })();
+
+  // ── 탭 전환 ───────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('page-' + tab).classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  // ── 현장목록 로드 ─────────────────────────
+  function loadSiteList() {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        const sel = document.getElementById('siteName');
+        sel.classList.remove('loading');
+        sel.innerHTML = '<option value="">현장을 선택하세요</option>';
+        if (result.success && result.sites.length > 0) {
+          result.sites.forEach(site => {
+            const opt = document.createElement('option');
+            opt.value = site;
+            opt.textContent = site;
+            sel.appendChild(opt);
+          });
+        }
+      })
+      .withFailureHandler(function() {
+        const sel = document.getElementById('siteName');
+        sel.classList.remove('loading');
+        sel.innerHTML = '<option value="">현장목록 로드 실패 — 새로고침 하세요</option>';
+      })
+      .getSiteList();
+  }
+
+  // ── 명단 불러오기 ─────────────────────────
+  function loadRoster() {
+    const siteName = document.getElementById('siteName').value;
+    if (!siteName) { showToast('현장을 먼저 선택하세요.', 'error'); return; }
+
+    const btn = document.getElementById('btnLoadRoster');
+    btn.disabled = true;
+    btn.textContent = '불러오는 중...';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        btn.innerHTML = '📋 명단 불러오기';
+
+        if (!result.success) {
+          showToast('명단 불러오기 실패', 'error');
+          return;
+        }
+        if (!result.workers || result.workers.length === 0) {
+          showToast('저장된 명단이 없습니다.', '');
+          return;
+        }
+
+        // 기존 목록 지우고 불러온 명단으로 채우기
+        document.getElementById('workerList').innerHTML = '';
+        result.workers.forEach(name => addWorker(name));
+
+        const dateStr = result.date ? ` (${result.date} 기준)` : '';
+        showToast(`${result.workers.length}명 불러왔습니다${dateStr}`, 'success');
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '📋 명단 불러오기';
+        showToast('불러오기 실패: ' + err.message, 'error');
+      })
+      .getLatestWorkerList(siteName);
+  }
+
+  // ── 작업자 추가/삭제 ──────────────────────
+  function addWorker(name) {
+    const list = document.getElementById('workerList');
+    const id = 'worker_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+
+    const item = document.createElement('div');
+    item.className = 'worker-item';
+    item.id = id;
+    item.innerHTML = `
+      <div class="worker-num">${list.children.length + 1}</div>
+      <input type="text" placeholder="작업자 이름" value="${name || ''}" oninput="updateWorkerCount()" />
+      <button class="btn-remove" onclick="removeWorker('${id}')">✕</button>
+    `;
+    list.appendChild(item);
+    renumberWorkers();
+    updateWorkerCount();
+    if (!name) item.querySelector('input').focus();
+  }
+
+  function removeWorker(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+    renumberWorkers();
+    updateWorkerCount();
+  }
+
+  function renumberWorkers() {
+    document.querySelectorAll('.worker-item').forEach((item, i) => {
+      item.querySelector('.worker-num').textContent = i + 1;
+    });
+  }
+
+  function updateWorkerCount() {
+    const count = Array.from(document.querySelectorAll('.worker-item input'))
+      .filter(i => i.value.trim() !== '').length;
+    document.getElementById('workerCountBadge').textContent = count + '명';
+  }
+
+  function getWorkers() {
+    return Array.from(document.querySelectorAll('.worker-item input'))
+      .map(i => i.value.trim()).filter(v => v !== '');
+  }
+
+  // ── 사진 처리 ─────────────────────────────
+  function handlePhotos(files) {
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const id = 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        photoFiles.push({ id, file, base64: e.target.result, name: file.name });
+        renderPhotoPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPhotoPreview() {
+    const grid = document.getElementById('photoPreview');
+    grid.innerHTML = '';
+    photoFiles.forEach(p => {
+      const thumb = document.createElement('div');
+      thumb.className = 'photo-thumb';
+      thumb.innerHTML = `
+        <img src="${p.base64}" alt="${p.name}" />
+        <button class="remove-photo" onclick="removePhoto('${p.id}')">✕</button>
+      `;
+      grid.appendChild(thumb);
+    });
+  }
+
+  function removePhoto(id) {
+    photoFiles = photoFiles.filter(p => p.id !== id);
+    renderPhotoPreview();
+  }
+
+  // ── 제출 ──────────────────────────────────
+  async function submitForm() {
+    const date = document.getElementById('date').value;
+    const siteName = document.getElementById('siteName').value;
+    const constructionName = document.getElementById('constructionName').value.trim();
+    const managerName = document.getElementById('managerName').value.trim();
+    const workers = getWorkers();
+
+    if (!date)         { showToast('날짜를 선택하세요.', 'error'); return; }
+    if (!siteName)     { showToast('현장명을 선택하세요.', 'error'); return; }
+    if (!managerName)  { showToast('관리자명을 입력하세요.', 'error'); return; }
+    if (workers.length === 0) { showToast('작업자를 1명 이상 입력하세요.', 'error'); return; }
+
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    showOverlay('처리 중...');
+
+    try {
+      // 사진 업로드
+      const photoLinks = [];
+      if (photoFiles.length > 0) {
+        document.getElementById('progressWrap').classList.add('show');
+        for (let i = 0; i < photoFiles.length; i++) {
+          setProgress(Math.round((i / photoFiles.length) * 70));
+          updateOverlay(`사진 업로드 중... (${i + 1}/${photoFiles.length})`);
+          const result = await callServer('uploadPhoto', [photoFiles[i].base64, photoFiles[i].name, date, siteName]);
+          if (result.success) photoLinks.push(result.url);
+        }
+        setProgress(80);
+      }
+
+      // 데이터 저장
+      updateOverlay('데이터 저장 중...');
+      setProgress(90);
+
+      const formData = {
+        date, siteName, constructionName, managerName, workers,
+        todayWork: document.getElementById('todayWork').value.trim(),
+        tomorrowWork: document.getElementById('tomorrowWork').value.trim(),
+        photoLinks
+      };
+
+      const saveResult = await callServer('saveData', [formData]);
+      setProgress(100);
+
+      if (saveResult.success) {
+        setTimeout(() => {
+          hideOverlay();
+          document.getElementById('formArea').style.display = 'none';
+          const card = document.getElementById('successCard');
+          card.style.display = 'block';
+          document.getElementById('successMsg').innerHTML =
+            `현장: <strong>${siteName}</strong><br>출역인원 <strong>${workers.length}명</strong> / 사진 <strong>${photoLinks.length}장</strong><br>Google Sheets & Drive 저장 완료!`;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 400);
+      } else {
+        throw new Error(saveResult.message || '저장 실패');
+      }
+    } catch (e) {
+      hideOverlay();
+      submitBtn.disabled = false;
+      showToast('오류: ' + e.message, 'error');
+    }
+  }
+
+  function callServer(fnName, args) {
+    return new Promise((resolve, reject) => {
+      let runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(err => reject(new Error(err.message)));
+      runner[fnName](...args);
+    });
+  }
+
+  // ── 초기화 (새 보고 작성) ─────────────────
+  function resetForm() {
+    document.getElementById('successCard').style.display = 'none';
+    document.getElementById('formArea').style.display = 'block';
+    document.getElementById('siteName').value = '';
+    document.getElementById('constructionName').value = '';
+    document.getElementById('managerName').value = '';
+    document.getElementById('todayWork').value = '';
+    document.getElementById('tomorrowWork').value = '';
+    document.getElementById('workerList').innerHTML = '';
+    photoFiles = [];
+    renderPhotoPreview();
+    document.getElementById('progressWrap').classList.remove('show');
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('submitBtn').disabled = false;
+    addWorker();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── 검색 ──────────────────────────────────
+  function doSearch() {
+    const dateFrom = document.getElementById('searchFrom').value;
+    const dateTo   = document.getElementById('searchTo').value;
+
+    if (!dateFrom || !dateTo) { showToast('날짜를 선택하세요.', 'error'); return; }
+    if (dateFrom > dateTo)    { showToast('시작일이 종료일보다 늦습니다.', 'error'); return; }
+
+    const btn = document.getElementById('btnSearch');
+    btn.disabled = true;
+    btn.textContent = '검색 중...';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        btn.textContent = '검색';
+        renderSearchResults(result, dateFrom, dateTo);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.textContent = '검색';
+        showToast('검색 실패: ' + err.message, 'error');
+      })
+      .searchRecords(dateFrom, dateTo);
+  }
+
+  function renderSearchResults(result, dateFrom, dateTo) {
+    const container = document.getElementById('searchResults');
+
+    if (!result.success || !result.records || result.records.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🔍</div>
+          <p>${dateFrom} ~ ${dateTo}<br>해당 기간의 출역 기록이 없습니다.</p>
+        </div>`;
+      return;
+    }
+
+    const records = result.records;
+    let html = `<div class="result-count">총 ${records.length}건의 기록</div>`;
+
+    records.forEach(r => {
+      const workerList = r.workers
+        ? r.workers.split(',').map(w => w.trim()).filter(w => w)
+        : [];
+
+      const workerChips = workerList.length > 0
+        ? workerList.map(w => `<div class="result-worker-chip">${w}</div>`).join('')
+        : '<span style="color:#9E9E9E;font-size:13px;">명단 없음</span>';
+
+      html += `
+        <div class="result-card">
+          <div class="result-card-header">
+            <div class="result-date">📅 ${r.date}</div>
+            <div class="result-count-badge">${r.workerCount}명</div>
+          </div>
+          <div class="result-card-body">
+            <div class="result-meta">
+              <div class="result-meta-item">
+                <div class="result-meta-label">현장명</div>
+                <div class="result-meta-value">${r.siteName || '-'}</div>
+              </div>
+              <div class="result-meta-item">
+                <div class="result-meta-label">공사명</div>
+                <div class="result-meta-value">${r.constructionName || '-'}</div>
+              </div>
+              <div class="result-meta-item">
+                <div class="result-meta-label">관리자</div>
+                <div class="result-meta-value">${r.managerName || '-'}</div>
+              </div>
+            </div>
+            <div class="result-workers-title">출역인원</div>
+            <div class="result-workers-grid">${workerChips}</div>
+          </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  // ── UI 유틸 ────────────────────────────────
+  function showOverlay(msg) {
+    document.getElementById('overlayText').textContent = msg || '처리 중...';
+    document.getElementById('overlay').classList.add('show');
+  }
+  function updateOverlay(msg) { document.getElementById('overlayText').textContent = msg; }
+  function hideOverlay() {
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('progressWrap').classList.remove('show');
+    document.getElementById('progressBar').style.width = '0%';
+  }
+  function setProgress(pct) { document.getElementById('progressBar').style.width = pct + '%'; }
+
+  let toastTimer;
+  function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
